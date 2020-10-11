@@ -1,0 +1,15 @@
+[package]
+name = "bevy_prototype_character_controller"
+version = "0.1.0"
+authors = ["Robert Swain <robert.swain@gmail.com>"]
+edition = "2018"
+license = "MIT"
+
+[features]
+default = []
+
+[dependencies]
+bevy = "0.2.1"
+
+[dev-dependencies]
+rand = "0.7.3"
