@@ -6,19 +6,19 @@ This design is intended to allow use of these controller systems with whichever 
 
 ## Demos
 
-### First-person Character Controller
+### First-Person Character Controller
 `cargo run --release --example first_person`
 ![First-person character controller demo](https://github.com/superdump/bevy_prototype_character_controller/raw/gh-pages/images/20201011%20142238%20-%20Bevy%20First%20Person%20Character%20Controller.gif)
 
-### Third-person Character Controller
+### Third-Person Character Controller
 `cargo run --release --example third_person`
 ![Third-person character controller demo](https://github.com/superdump/bevy_prototype_character_controller/raw/gh-pages/images/20201011%20142657%20-%20Bevy%20Third%20Person%20Character%20Controller.gif)
 
-### Third-person Pseudo-isometric Character Controller
+### Third-Person Pseudo-Isometric Character Controller
 `cargo run --release --example pseudo_isometric`
 ![Third-person pseudo-isometric character controller demo](https://github.com/superdump/bevy_prototype_character_controller/raw/gh-pages/images/20201011%20142953%20-%20Bevy%20Pseudo-Isometric%20Character%20Controller.gif)
 
-## How-to
+## How-To
 
 See the examples for the different types of controller to get a better idea of how to use this stuff. Below is a description of an approach to structuring the hierarchy of entities necessary to make this system work.
 
