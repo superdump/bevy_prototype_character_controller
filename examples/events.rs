@@ -3,6 +3,7 @@ use bevy_prototype_character_controller::events::{
     LookDeltaEvent, LookEvent, PitchEvent, TranslationEvent, YawEvent,
 };
 
+// Take a look at example_utils/utils.rs for details!
 #[path = "../example_utils/utils.rs"]
 mod utils;
 use utils::{build_app, CharacterSettings, ControllerEvents};

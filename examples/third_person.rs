@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 
+// Take a look at example_utils/utils.rs for details!
 #[path = "../example_utils/utils.rs"]
 mod utils;
 use utils::{
