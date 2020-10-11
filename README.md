@@ -35,7 +35,7 @@ The structure of the Character is:
 
 * When translating, the position of the body should be manipulated.
 * When yawing (rotating about the y axis), the orientation of the body should be manipulated.
-* W*hen pitching (rotating about the right axis relative to the character), the orientation of the head should be manipulated.
+* When pitching (rotating about the right axis relative to the character), the orientation of the head should be manipulated.
 * When zooming in and out (TODO) or changing the focal point (TODO - defaults to look at the head position for third-person), the translation and orientation of the camera boom should be manipulated.
 
 ## TODO
