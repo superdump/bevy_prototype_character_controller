@@ -1,5 +1,4 @@
-## bevy_prototype_character_controller
-
+## Demos
 ### First-person Character Controller
 ![First-person character controller demo](https://github.com/superdump/bevy_prototype_character_controller/raw/gh-pages/images/20201011%20142238%20-%20Bevy%20First%20Person%20Character%20Controller.gif)
 
