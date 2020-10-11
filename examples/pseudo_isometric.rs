@@ -27,8 +27,8 @@ struct CameraTag;
 
 fn spawn_world(
     mut commands: Commands,
-    mut materials: ResMut<'_, Assets<StandardMaterial>>,
-    mut meshes: ResMut<'_, Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut meshes: ResMut<Assets<Mesh>>,
 ) {
     let cube = meshes.add(Mesh::from(shape::Cube { size: 0.5 }));
 
@@ -130,12 +130,12 @@ struct ControllerEvents {
 }
 
 fn controller_to_kinematic(
-    translations: Res<'_, Events<TranslationEvent>>,
-    mut reader: ResMut<'_, ControllerEvents>,
+    translations: Res<Events<TranslationEvent>>,
+    mut reader: ResMut<ControllerEvents>,
     _body: &BodyTag,
     _kinematic_body: &FakeKinematicRigidBody,
-    mut transform: Mut<'_, Transform>,
-    mut controller: Mut<'_, TranslationController>,
+    mut transform: Mut<Transform>,
+    mut controller: Mut<TranslationController>,
 ) {
     for translation in reader.translations.iter(&translations) {
         transform.translate(**translation);

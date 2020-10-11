@@ -19,8 +19,8 @@ fn main() {
 
 fn spawn_world(
     mut commands: Commands,
-    mut materials: ResMut<'_, Assets<StandardMaterial>>,
-    mut meshes: ResMut<'_, Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut meshes: ResMut<Assets<Mesh>>,
 ) {
     let grey = materials.add(Color::hex("808080").unwrap().into());
     let red = materials.add(Color::hex("800000").unwrap().into());
@@ -72,12 +72,12 @@ struct ControllerEvents {
 }
 
 fn print_controller_events(
-    mut reader: ResMut<'_, ControllerEvents>,
-    translations: Res<'_, Events<TranslationEvent>>,
+    mut reader: ResMut<ControllerEvents>,
+    translations: Res<Events<TranslationEvent>>,
     pitches: Res<Events<PitchEvent>>,
     yaws: Res<Events<YawEvent>>,
-    looks: Res<'_, Events<LookEvent>>,
-    look_deltas: Res<'_, Events<LookDeltaEvent>>,
+    looks: Res<Events<LookEvent>>,
+    look_deltas: Res<Events<LookDeltaEvent>>,
 ) {
     for event in reader.translations.iter(&translations) {
         println!("{:?}", event);

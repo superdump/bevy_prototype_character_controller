@@ -109,12 +109,12 @@ pub fn controller_to_look_direction(world: &mut World, resources: &mut Resources
 }
 
 pub fn input_to_translation(
-    controller_to_look: Res<'_, ControllerToLook>,
-    time: Res<'_, Time>,
-    keyboard_input: Res<'_, Input<KeyCode>>,
-    mut events: ResMut<'_, Events<TranslationEvent>>,
-    mut controller_query: Query<'_, (Entity, &mut TranslationController)>,
-    look_direction_query: Query<'_, &LookDirection>,
+    controller_to_look: Res<ControllerToLook>,
+    time: Res<Time>,
+    keyboard_input: Res<Input<KeyCode>>,
+    mut events: ResMut<Events<TranslationEvent>>,
+    mut controller_query: Query<(Entity, &mut TranslationController)>,
+    look_direction_query: Query<&LookDirection>,
 ) {
     for (entity, mut controller) in &mut controller_query.iter() {
         let look_entity = controller_to_look

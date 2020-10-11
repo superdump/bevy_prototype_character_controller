@@ -29,8 +29,8 @@ struct CameraTag;
 
 fn spawn_world(
     mut commands: Commands,
-    mut materials: ResMut<'_, Assets<StandardMaterial>>,
-    mut meshes: ResMut<'_, Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut meshes: ResMut<Assets<Mesh>>,
 ) {
     let cube = meshes.add(Mesh::from(shape::Cube { size: 0.5 }));
 
@@ -120,12 +120,12 @@ struct ControllerEvents {
 }
 
 fn controller_to_kinematic(
-    translations: Res<'_, Events<TranslationEvent>>,
-    mut reader: ResMut<'_, ControllerEvents>,
+    translations: Res<Events<TranslationEvent>>,
+    mut reader: ResMut<ControllerEvents>,
     _body: &BodyTag,
     _kinematic_body: &FakeKinematicRigidBody,
-    mut transform: Mut<'_, Transform>,
-    mut controller: Mut<'_, TranslationController>,
+    mut transform: Mut<Transform>,
+    mut controller: Mut<TranslationController>,
 ) {
     for translation in reader.translations.iter(&translations) {
         transform.translate(**translation);
@@ -140,10 +140,10 @@ fn controller_to_kinematic(
 }
 
 fn controller_to_yaw(
-    mut reader: ResMut<'_, ControllerEvents>,
-    yaws: Res<'_, Events<YawEvent>>,
+    mut reader: ResMut<ControllerEvents>,
+    yaws: Res<Events<YawEvent>>,
     _body: &BodyTag,
-    mut transform: Mut<'_, Transform>,
+    mut transform: Mut<Transform>,
 ) {
     for yaw in reader.yaws.iter(&yaws) {
         transform.set_rotation(Quat::from_rotation_ypr(**yaw, 0.0, 0.0));
@@ -151,10 +151,10 @@ fn controller_to_yaw(
 }
 
 fn controller_to_pitch(
-    mut reader: ResMut<'_, ControllerEvents>,
-    pitches: Res<'_, Events<PitchEvent>>,
+    mut reader: ResMut<ControllerEvents>,
+    pitches: Res<Events<PitchEvent>>,
     _head: &HeadTag,
-    mut transform: Mut<'_, Transform>,
+    mut transform: Mut<Transform>,
 ) {
     for pitch in reader.pitches.iter(&pitches) {
         transform.set_rotation(Quat::from_rotation_ypr(0.0, **pitch, 0.0));

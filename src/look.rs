@@ -21,7 +21,7 @@ impl Default for LookDirection {
     }
 }
 
-pub fn forward_up(settings: Res<'_, MouseSettings>, mut look: Mut<'_, LookDirection>) {
+pub fn forward_up(settings: Res<MouseSettings>, mut look: Mut<LookDirection>) {
     let rotation = Quat::from_rotation_ypr(
         settings.yaw_pitch_roll.x(),
         settings.yaw_pitch_roll.y(),
@@ -54,13 +54,13 @@ pub struct MouseMotionState {
 const PITCH_BOUND: f32 = std::f32::consts::FRAC_PI_2 - 1E-3;
 
 pub fn input_to_look(
-    mouse_motion_events: Res<'_, Events<MouseMotion>>,
-    mut settings: ResMut<'_, MouseSettings>,
-    mut mouse_motion: ResMut<'_, MouseMotionState>,
-    mut pitch_events: ResMut<'_, Events<PitchEvent>>,
-    mut yaw_events: ResMut<'_, Events<YawEvent>>,
-    mut look_events: ResMut<'_, Events<LookEvent>>,
-    mut look_delta_events: ResMut<'_, Events<LookDeltaEvent>>,
+    mouse_motion_events: Res<Events<MouseMotion>>,
+    mut settings: ResMut<MouseSettings>,
+    mut mouse_motion: ResMut<MouseMotionState>,
+    mut pitch_events: ResMut<Events<PitchEvent>>,
+    mut yaw_events: ResMut<Events<YawEvent>>,
+    mut look_events: ResMut<Events<LookEvent>>,
+    mut look_delta_events: ResMut<Events<LookDeltaEvent>>,
 ) {
     let mut delta = Vec2::zero();
     for motion in mouse_motion.event_reader.iter(&mouse_motion_events) {
