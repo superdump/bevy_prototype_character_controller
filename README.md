@@ -19,15 +19,16 @@ This design is intended to allow use of these controller systems with whichever 
 
 ## TODO
 
+- refactoring - initially I thought I would have different files and plugins for look, translation, impulse, and force but it's looking like for the physical-feel they can be implemented in one system using the same physical model and emit the different events of interest
+- use components rather than resources as appropriate to support multiple controllers in a scene (e.g. split-screen local co-op)
 - add indirect third-person modes
   - the pseudo-isometric example should make the body face the direction of movement
   - the third-person indirect example would have the player control the character and the follow camera would lag, seek and follow after
 - support impulses and forces
 - avoid clipping the camera through obstacles
   - ray or box cast and adjust the camera position
-- add examples that use physics engines (rapier, physx)
-- add juicy controllers that use Attack, Decay, Sustain, Release curves, with easing using bevy_easings
-- move yaw / pitch / roll out to a component
+- add examples that use physics engines (`rapier` through `bevy_rapier3d`, `physx` through `bevy_prototype_physx`)
+- add juicy controllers that use Attack, Decay, Sustain, Release curves, with easing using `bevy_easings`
 
 ## License
 
