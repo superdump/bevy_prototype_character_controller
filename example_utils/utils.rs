@@ -1,7 +1,9 @@
 use bevy::{input::system::exit_on_esc_system, prelude::*};
 use bevy_prototype_character_controller::{
-    controller::{CharacterController, CharacterControllerPlugin},
-    events::{LookDeltaEvent, LookEvent, PitchEvent, TranslationEvent, YawEvent},
+    controller::{CharacterController, CharacterControllerPlugin, Mass},
+    events::{
+        ForceEvent, ImpulseEvent, LookDeltaEvent, LookEvent, PitchEvent, TranslationEvent, YawEvent,
+    },
     look::LookDirection,
 };
 use rand::Rng;
@@ -17,7 +19,7 @@ pub struct CharacterSettings {
 impl Default for CharacterSettings {
     fn default() -> Self {
         Self {
-            scale: Vec3::new(0.5, 1.0, 0.3),
+            scale: Vec3::new(0.5, 1.9, 0.3),
             head_scale: 0.3,
             head_yaw: 0.0,
             follow_offset: Vec3::new(0.0, 4.0, 8.0), // Relative to head
@@ -29,6 +31,8 @@ impl Default for CharacterSettings {
 #[derive(Default)]
 pub struct ControllerEvents {
     pub translations: EventReader<TranslationEvent>,
+    pub impulses: EventReader<ImpulseEvent>,
+    pub forces: EventReader<ForceEvent>,
     pub yaws: EventReader<YawEvent>,
     pub pitches: EventReader<PitchEvent>,
     pub looks: EventReader<LookEvent>,
@@ -114,6 +118,7 @@ pub fn spawn_character(
             Transform::identity(),
             CharacterController::default(),
             FakeKinematicRigidBody,
+            Mass::new(80.0),
             BodyTag,
         ))
         .with_children(|body| {
@@ -121,18 +126,18 @@ pub fn spawn_character(
                 material: red,
                 mesh: cube,
                 transform: Transform::new(Mat4::from_scale_rotation_translation(
-                    character_settings.scale,
+                    character_settings.scale - character_settings.head_scale * Vec3::unit_y(),
                     Quat::identity(),
-                    0.5 * (character_settings.scale.y() - 1.0) * Vec3::unit_y(),
+                    Vec3::new(0.0, character_settings.head_scale, 0.0),
                 )),
                 ..Default::default()
             })
             .spawn((
                 GlobalTransform::identity(),
                 Transform::from_translation_rotation(
-                    0.5 * (character_settings.scale.y() + character_settings.head_scale)
+                    (0.5 * character_settings.scale.y() + character_settings.head_scale)
                         * Vec3::unit_y(),
-                    Quat::from_rotation_y(character_settings.head_yaw), // FIXME - this is a hack
+                    Quat::from_rotation_y(character_settings.head_yaw),
                 ),
                 HeadTag,
             ))
