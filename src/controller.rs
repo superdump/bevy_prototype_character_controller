@@ -28,13 +28,13 @@ impl Plugin for CharacterControllerPlugin {
             .init_resource::<ControllerToLook>()
             .init_resource::<MouseMotionState>()
             .init_resource::<MouseSettings>()
-            .add_system_to_stage(bevy::app::stage::PRE_UPDATE, forward_up.system())
             .add_system_to_stage_front(bevy::app::stage::PRE_UPDATE, input_to_events.system())
-            .add_system_to_stage(
+            .add_system_to_stage_front(bevy::app::stage::PRE_UPDATE, input_to_look.system())
+            .add_system_to_stage_front(bevy::app::stage::PRE_UPDATE, forward_up.system())
+            .add_system_to_stage_front(
                 bevy::app::stage::PRE_UPDATE,
                 controller_to_look_direction.thread_local_system(),
-            )
-            .add_system_to_stage_front(bevy::app::stage::UPDATE, input_to_look.system());
+            );
     }
 }
 
