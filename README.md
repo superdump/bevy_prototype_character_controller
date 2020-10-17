@@ -18,6 +18,35 @@ This design is intended to allow use of these controller systems with whichever 
 `cargo run --release --example pseudo_isometric`
 ![Third-person pseudo-isometric character controller demo](https://github.com/superdump/bevy_prototype_character_controller/raw/gh-pages/images/20201011%20142953%20-%20Bevy%20Pseudo-Isometric%20Character%20Controller.gif)
 
+### Rapier Third-Person Character Controller
+
+You can choose between:
+* `DynamicImpulse` - uses the `ImpulseEvent`s to apply impulses to the body
+* `DynamicForce` - uses the `ForceEvent`s to apply forces to the body. This is the default.
+
+Pitch and yaw are handled in the same way for both options.
+
+`cargo run --release --example rapier3d -- DynamicImpulse`
+![Third-person Rapier 3D dynamic impulse character controller demo](https://github.com/superdump/bevy_prototype_character_controller/raw/gh-pages/images/20201017%20212543%20-%20Bevy%20Rapier%203D%20Dynamic%20Impulse%20Character%20Controller.gif)
+`cargo run --release --example rapier3d -- DynamicForce`
+![Third-person Rapier 3D dynamic force character controller demo](https://github.com/superdump/bevy_prototype_character_controller/raw/gh-pages/images/20201017%20213044%20-%20Bevy%20Rapier%203D%20Dynamic%20Force%20Character%20Controller.gif)
+
+### PhysX Third-Person Character Controller
+
+You can choose between:
+* `KinematicTranslation` - uses the `TranslationEvent`s to apply translations to the body
+* `DynamicImpulse` - uses the `ImpulseEvent`s to apply impulses to the body
+* `DynamicForce` - uses the `ForceEvent`s to apply forces to the body. This is the default.
+
+Pitch and yaw are handled in the same way for both options.
+
+`cargo run --release --example physx -- KinematicTranslation`
+![Third-person PhysX kinematic translation character controller demo](https://github.com/superdump/bevy_prototype_character_controller/raw/gh-pages/images/20201017%20224653%20-%20Bevy%20PhysX%20Kinematic%20Translation%20Character%20Controller.gif)
+`cargo run --release --example physx -- DynamicImpulse`
+![Third-person PhysX dynamic impulse character controller demo](https://github.com/superdump/bevy_prototype_character_controller/raw/gh-pages/images/20201017%20224853%20-%20Bevy%20PhysX%20Dynamic%20Impulse%20Character%20Controller.gif)
+`cargo run --release --example physx -- DynamicForce`
+![Third-person PhysX dynamic force character controller demo](https://github.com/superdump/bevy_prototype_character_controller/raw/gh-pages/images/20201017%20225103%20Bevy%20PhysX%20Dynamic%20Force%20Character%20Controller.gif)
+
 ## How-To
 
 See the examples for the different types of controller to get a better idea of how to use this stuff. Below is a description of an approach to structuring the hierarchy of entities necessary to make this system work.
