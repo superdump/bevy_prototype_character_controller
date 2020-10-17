@@ -1,8 +1,8 @@
 use bevy::{input::system::exit_on_esc_system, prelude::*};
 use bevy_prototype_character_controller::{
+    controller::{CharacterController, CharacterControllerPlugin},
     events::{LookDeltaEvent, LookEvent, PitchEvent, TranslationEvent, YawEvent},
     look::LookDirection,
-    translation::{CharacterController, CharacterControllerPlugin},
 };
 use rand::Rng;
 
