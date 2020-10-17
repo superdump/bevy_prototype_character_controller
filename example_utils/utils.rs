@@ -1,9 +1,9 @@
 use bevy::{input::system::exit_on_esc_system, prelude::*};
 use bevy_prototype_character_controller::{
-    controller::{CharacterController, CharacterControllerPlugin, Mass},
-    events::{
-        ForceEvent, ImpulseEvent, LookDeltaEvent, LookEvent, PitchEvent, TranslationEvent, YawEvent,
+    controller::{
+        BodyTag, CameraTag, CharacterController, CharacterControllerPlugin, HeadTag, Mass,
     },
+    events::{ControllerEvents, TranslationEvent},
     look::LookDirection,
 };
 use rand::Rng;
@@ -28,22 +28,7 @@ impl Default for CharacterSettings {
     }
 }
 
-#[derive(Default)]
-pub struct ControllerEvents {
-    pub translations: EventReader<TranslationEvent>,
-    pub impulses: EventReader<ImpulseEvent>,
-    pub forces: EventReader<ForceEvent>,
-    pub yaws: EventReader<YawEvent>,
-    pub pitches: EventReader<PitchEvent>,
-    pub looks: EventReader<LookEvent>,
-    pub look_deltas: EventReader<LookDeltaEvent>,
-}
-
 pub struct FakeKinematicRigidBody;
-
-pub struct BodyTag;
-pub struct HeadTag;
-pub struct CameraTag;
 
 pub fn build_app(app: &mut AppBuilder) {
     app.add_resource(ClearColor(Color::hex("101010").unwrap()))
@@ -179,27 +164,5 @@ pub fn controller_to_kinematic(
     if transform.translation().y() < 0.0 {
         *transform.value_mut().w_axis_mut().y_mut() = 0.0;
         controller.jumping = false;
-    }
-}
-
-pub fn controller_to_yaw(
-    mut reader: ResMut<ControllerEvents>,
-    yaws: Res<Events<YawEvent>>,
-    _body: &BodyTag,
-    mut transform: Mut<Transform>,
-) {
-    for yaw in reader.yaws.iter(&yaws) {
-        transform.set_rotation(Quat::from_rotation_ypr(**yaw, 0.0, 0.0));
-    }
-}
-
-pub fn controller_to_pitch(
-    mut reader: ResMut<ControllerEvents>,
-    pitches: Res<Events<PitchEvent>>,
-    _head: &HeadTag,
-    mut transform: Mut<Transform>,
-) {
-    for pitch in reader.pitches.iter(&pitches) {
-        transform.set_rotation(Quat::from_rotation_ypr(0.0, **pitch, 0.0));
     }
 }

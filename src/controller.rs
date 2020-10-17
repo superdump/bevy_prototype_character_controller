@@ -6,13 +6,18 @@
 
 use crate::{
     events::{
-        ForceEvent, ImpulseEvent, LookDeltaEvent, LookEvent, PitchEvent, TranslationEvent, YawEvent,
+        ControllerEvents, ForceEvent, ImpulseEvent, LookDeltaEvent, LookEvent, PitchEvent,
+        TranslationEvent, YawEvent,
     },
     input_map::InputMap,
     look::{forward_up, input_to_look, LookDirection, MouseMotionState, MouseSettings},
 };
 use bevy::prelude::*;
 use std::{collections::HashMap, ops};
+
+pub struct BodyTag;
+pub struct HeadTag;
+pub struct CameraTag;
 
 pub struct CharacterControllerPlugin;
 
@@ -25,6 +30,7 @@ impl Plugin for CharacterControllerPlugin {
             .add_event::<TranslationEvent>()
             .add_event::<ImpulseEvent>()
             .add_event::<ForceEvent>()
+            .init_resource::<ControllerEvents>()
             .init_resource::<ControllerToLook>()
             .init_resource::<MouseMotionState>()
             .init_resource::<MouseSettings>()
@@ -261,5 +267,27 @@ pub fn input_to_events(
         }
 
         controller.input_state = InputState::default();
+    }
+}
+
+pub fn controller_to_yaw(
+    mut reader: ResMut<ControllerEvents>,
+    yaws: Res<Events<YawEvent>>,
+    _body: &BodyTag,
+    mut transform: Mut<Transform>,
+) {
+    for yaw in reader.yaws.iter(&yaws) {
+        transform.set_rotation(Quat::from_rotation_ypr(**yaw, 0.0, 0.0));
+    }
+}
+
+pub fn controller_to_pitch(
+    mut reader: ResMut<ControllerEvents>,
+    pitches: Res<Events<PitchEvent>>,
+    _head: &HeadTag,
+    mut transform: Mut<Transform>,
+) {
+    for pitch in reader.pitches.iter(&pitches) {
+        transform.set_rotation(Quat::from_rotation_ypr(0.0, **pitch, 0.0));
     }
 }

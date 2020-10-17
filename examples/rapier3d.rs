@@ -1,17 +1,12 @@
 use bevy::{input::system::exit_on_esc_system, prelude::*};
 use bevy_prototype_character_controller::{
-    controller::{CharacterController, CharacterControllerPlugin, Mass},
-    events::{ForceEvent, ImpulseEvent, YawEvent},
+    controller::{BodyTag, CameraTag, CharacterController, HeadTag},
     look::LookDirection,
+    rapier::*,
 };
 use bevy_rapier3d::{
-    na,
-    physics::{RapierPhysicsPlugin, RigidBodyHandleComponent},
-    rapier::{
-        dynamics::{RigidBodyBuilder, RigidBodySet},
-        geometry::ColliderBuilder,
-        math::{Isometry, Vector},
-    },
+    physics::RapierPhysicsPlugin,
+    rapier::{dynamics::RigidBodyBuilder, geometry::ColliderBuilder},
 };
 use clap::{arg_enum, value_t};
 use rand::Rng;
@@ -48,39 +43,21 @@ fn main() {
         .add_resource(Msaa { samples: 4 })
         .add_default_plugins()
         .add_system(exit_on_esc_system.system())
-        // Character Controller
-        .add_plugin(CharacterControllerPlugin)
-        .init_resource::<ControllerEvents>()
         // Rapier
-        .add_plugin(RapierPhysicsPlugin)
-        // Character controller adaptations for Rapier
-        .add_system(create_mass.system())
-        .add_system(constrain_rotation.system())
-        .add_system_to_stage_front(bevy::app::stage::PRE_UPDATE, body_to_velocity.system());
+        .add_plugin(RapierPhysicsPlugin);
 
     // IMPORTANT: The impulse/force systems MUST run before the physics simulation step, so they
     // either need to be added to the end of PRE_UPDATE or the beginning of UPDATE
     if controller_type == ControllerType::DynamicImpulse {
         // Option A. Apply impulses (changes in momentum)
-        app.add_system_to_stage_front(
-            bevy::app::stage::UPDATE,
-            controller_to_rapier_dynamic_impulse.system(),
-        );
+        app.add_plugin(RapierDynamicImpulseCharacterControllerPlugin);
     } else {
         // Option B. Apply forces (rate of change of momentum)
-        app.add_system_to_stage_front(
-            bevy::app::stage::UPDATE,
-            controller_to_rapier_dynamic_force.system(),
-        );
+        app.add_plugin(RapierDynamicForceCharacterControllerPlugin);
     }
 
-    // The yaw needs to be applied to the rigid body so this system has to
-    // be implemented for the physics engine in question
-    app.add_system_to_stage_front(bevy::app::stage::UPDATE, controller_to_rapier_yaw.system())
-        // Controllers generally all want to pitch in the same way
-        .add_system_to_stage_front(bevy::app::stage::UPDATE, controller_to_pitch.system())
-        // Specific to this demo
-        .init_resource::<CharacterSettings>()
+    // Specific to this demo
+    app.init_resource::<CharacterSettings>()
         .add_startup_system(spawn_world.system())
         .add_startup_system(spawn_character.system())
         .run();
@@ -145,8 +122,6 @@ pub fn spawn_world(
     }
 }
 
-pub struct BodyYawTag;
-
 pub fn spawn_character(
     mut commands: Commands,
     character_settings: Res<CharacterSettings>,
@@ -176,7 +151,6 @@ pub fn spawn_character(
             )
             .density(200.0),
             BodyTag,
-            BodyYawTag,
         ))
         .with_children(|body| {
             body.spawn(PbrComponents {
@@ -220,115 +194,4 @@ pub fn spawn_character(
                 .with(CameraTag);
             });
         });
-}
-
-pub struct ConstrainedTag;
-
-pub fn constrain_rotation(
-    mut commands: Commands,
-    mut bodies: ResMut<RigidBodySet>,
-    mut query: Query<Without<ConstrainedTag, With<BodyTag, (Entity, &RigidBodyHandleComponent)>>>,
-) {
-    for (entity, body_handle) in &mut query.iter() {
-        let mut body = bodies
-            .get_mut(body_handle.handle())
-            .expect("Failed to get RigidBody");
-        body.mass_properties.inv_principal_inertia_sqrt.x = 0.0;
-        body.mass_properties.inv_principal_inertia_sqrt.y = 0.0;
-        body.mass_properties.inv_principal_inertia_sqrt.z = 0.0;
-        commands.insert_one(entity, ConstrainedTag);
-    }
-}
-
-pub fn create_mass(
-    mut commands: Commands,
-    bodies: Res<RigidBodySet>,
-    mut query: Query<Without<Mass, (Entity, &RigidBodyHandleComponent)>>,
-) {
-    for (entity, body_handle) in &mut query.iter() {
-        let body = bodies
-            .get(body_handle.handle())
-            .expect("Failed to get RigidBody");
-        let mass = 1.0 / body.mass_properties.inv_mass;
-        commands.insert_one(entity, Mass::new(mass));
-    }
-}
-
-pub fn body_to_velocity(
-    bodies: Res<RigidBodySet>,
-    _body: &BodyTag,
-    body_handle: &RigidBodyHandleComponent,
-    mut controller: Mut<CharacterController>,
-) {
-    let body = bodies
-        .get(body_handle.handle())
-        .expect("Failed to get RigidBody");
-    let velocity = body.linvel;
-    controller.velocity = Vec3::new(velocity[0], velocity[1], velocity[2]);
-}
-
-pub fn controller_to_rapier_dynamic_impulse(
-    impulses: Res<Events<ImpulseEvent>>,
-    mut reader: ResMut<ControllerEvents>,
-    mut bodies: ResMut<RigidBodySet>,
-    _body: &BodyTag,
-    body_handle: &RigidBodyHandleComponent,
-) {
-    let mut impulse = Vec3::zero();
-    for event in reader.impulses.iter(&impulses) {
-        impulse += **event;
-    }
-
-    if impulse.length_squared() > 1E-6 {
-        let mut body = bodies
-            .get_mut(body_handle.handle())
-            .expect("Failed to get character body");
-        body.wake_up(true);
-        body.apply_impulse(Vector::new(impulse.x(), impulse.y(), impulse.z()));
-    }
-}
-
-pub fn controller_to_rapier_dynamic_force(
-    forces: Res<Events<ForceEvent>>,
-    mut reader: ResMut<ControllerEvents>,
-    mut bodies: ResMut<RigidBodySet>,
-    _body: &BodyTag,
-    body_handle: &RigidBodyHandleComponent,
-) {
-    let mut force = Vec3::zero();
-    for event in reader.forces.iter(&forces) {
-        force += **event;
-    }
-
-    if force.length_squared() > 1E-6 {
-        let mut body = bodies
-            .get_mut(body_handle.handle())
-            .expect("Failed to get character body");
-        body.wake_up(true);
-        body.apply_force(Vector::new(force.x(), force.y(), force.z()));
-    }
-}
-
-pub fn controller_to_rapier_yaw(
-    mut reader: ResMut<ControllerEvents>,
-    yaws: Res<Events<YawEvent>>,
-    mut bodies: ResMut<RigidBodySet>,
-    _body: &BodyTag,
-    body_handle: &RigidBodyHandleComponent,
-) {
-    let mut yaw = None;
-    for event in reader.yaws.iter(&yaws) {
-        yaw = Some(**event);
-    }
-    if let Some(yaw) = yaw {
-        let mut body = bodies
-            .get_mut(body_handle.handle())
-            .expect("Failed to get character body");
-        body.wake_up(true);
-        let translation = body.position.translation;
-        body.set_position(Isometry::from_parts(
-            translation,
-            na::UnitQuaternion::from_scaled_axis(Vector::y() * yaw),
-        ));
-    }
 }

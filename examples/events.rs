@@ -1,16 +1,17 @@
 use bevy::prelude::*;
 use bevy_prototype_character_controller::events::{
-    ForceEvent, ImpulseEvent, LookDeltaEvent, LookEvent, PitchEvent, TranslationEvent, YawEvent,
+    ControllerEvents, ForceEvent, ImpulseEvent, LookDeltaEvent, LookEvent, PitchEvent,
+    TranslationEvent, YawEvent,
 };
 
 // Take a look at example_utils/utils.rs for details!
 #[path = "../example_utils/utils.rs"]
 mod utils;
-use utils::{build_app, CharacterSettings, ControllerEvents};
+use utils::{build_app, CharacterSettings};
 
 fn main() {
     let mut app = App::build();
-    utils::build_app(&mut app);
+    build_app(&mut app);
     app.init_resource::<CharacterSettings>()
         .add_system(print_controller_events.system())
         .run();

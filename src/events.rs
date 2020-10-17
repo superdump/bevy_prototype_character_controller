@@ -1,6 +1,17 @@
 use bevy::prelude::*;
 use std::ops::Deref;
 
+#[derive(Default)]
+pub struct ControllerEvents {
+    pub translations: EventReader<TranslationEvent>,
+    pub impulses: EventReader<ImpulseEvent>,
+    pub forces: EventReader<ForceEvent>,
+    pub yaws: EventReader<YawEvent>,
+    pub pitches: EventReader<PitchEvent>,
+    pub looks: EventReader<LookEvent>,
+    pub look_deltas: EventReader<LookDeltaEvent>,
+}
+
 #[derive(Debug)]
 pub struct LookDeltaEvent {
     rotation_delta: Vec3,
