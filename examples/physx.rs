@@ -28,6 +28,8 @@ impl Default for ControllerType {
     }
 }
 
+pub struct KinematicYawTag;
+
 fn main() {
     let matches = clap::App::new("Bevy PhysX 3D Character Controller")
         .arg(
@@ -81,7 +83,19 @@ fn main() {
 
     // The yaw needs to be applied to the rigid body so this system has to
     // be implemented for the physics engine in question
-    app.add_system_to_stage_front(bevy::app::stage::UPDATE, controller_to_physx_yaw.system())
+    if controller_type == ControllerType::KinematicTranslation {
+        app.add_system_to_stage_front(
+            bevy::app::stage::UPDATE,
+            controller_to_physx_kinematic_yaw.system(),
+        );
+    } else {
+        app.add_system_to_stage_front(
+            bevy::app::stage::UPDATE,
+            controller_to_physx_dynamic_yaw.system(),
+        );
+    }
+
+    app
         // Controllers generally all want to pitch in the same way
         .add_system_to_stage_front(bevy::app::stage::UPDATE, controller_to_pitch.system())
         // Specific to this demo
@@ -172,10 +186,6 @@ pub fn spawn_character(
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
     let box_y = 1.0;
-    let cube = meshes.add(Mesh::from(shape::Cube { size: 0.5 }));
-    // Character
-    let red = materials.add(Color::hex("800000").unwrap().into());
-
     commands.spawn((
         GlobalTransform::identity(),
         Transform::from_translation(Vec3::new(
@@ -193,83 +203,122 @@ pub fn spawn_character(
     ));
 
     if *controller_type == ControllerType::KinematicTranslation {
-        commands.with_bundle((
-            Mass::new(80.0),
-            PhysXCapsuleControllerDesc {
-                height: character_settings.scale.y(),
-                radius: character_settings
-                    .scale
-                    .x()
-                    .max(character_settings.scale.z()),
-                step_offset: 0.5,
-            },
-        ));
+        commands
+            .with_bundle((
+                Mass::new(80.0),
+                PhysXCapsuleControllerDesc {
+                    height: character_settings.scale.y(),
+                    radius: character_settings
+                        .scale
+                        .x()
+                        .max(character_settings.scale.z()),
+                    step_offset: 0.5,
+                },
+            ))
+            .with_children(|body| {
+                body.spawn((
+                    GlobalTransform::identity(),
+                    Transform::identity(),
+                    KinematicYawTag,
+                ))
+                .with_children(|kinematic_yaw| {
+                    spawn_body_children(
+                        kinematic_yaw,
+                        &controller_type,
+                        &character_settings,
+                        box_y,
+                        &mut materials,
+                        &mut meshes,
+                    );
+                });
+            });
     } else {
-        commands.with_bundle((
-            PhysXColliderDesc::Capsule(
-                0.5 * character_settings
-                    .scale
-                    .x()
-                    .max(character_settings.scale.z()),
-                character_settings.scale.y(),
-            ),
-            PhysXRigidBodyDesc::Dynamic {
-                density: 200.0,
-                angular_damping: 0.5,
-            },
-        ));
+        commands
+            .with_bundle((
+                PhysXColliderDesc::Capsule(
+                    0.5 * character_settings
+                        .scale
+                        .x()
+                        .max(character_settings.scale.z()),
+                    character_settings.scale.y(),
+                ),
+                PhysXRigidBodyDesc::Dynamic {
+                    density: 200.0,
+                    angular_damping: 0.5,
+                },
+            ))
+            .with_children(|body| {
+                spawn_body_children(
+                    body,
+                    &controller_type,
+                    &character_settings,
+                    box_y,
+                    &mut materials,
+                    &mut meshes,
+                );
+            });
     }
+}
 
-    commands.with_children(|body| {
-        let (body_translation, head_translation) =
-            if *controller_type == ControllerType::KinematicTranslation {
-                (
-                    -0.5 * character_settings.head_scale * Vec3::unit_y(),
-                    0.5 * (character_settings.scale.y() - character_settings.head_scale)
-                        * Vec3::unit_y(),
-                )
-            } else {
-                (
-                    0.5 * box_y * Vec3::unit_y(),
-                    0.5 * (box_y + character_settings.scale.y()) * Vec3::unit_y(),
-                )
-            };
-        body.spawn(PbrComponents {
+fn spawn_body_children(
+    body: &mut ChildBuilder,
+    controller_type: &Res<ControllerType>,
+    character_settings: &Res<CharacterSettings>,
+    box_y: f32,
+    materials: &mut ResMut<Assets<StandardMaterial>>,
+    meshes: &mut ResMut<Assets<Mesh>>,
+) {
+    let cube = meshes.add(Mesh::from(shape::Cube { size: 0.5 }));
+    // Character
+    let red = materials.add(Color::hex("800000").unwrap().into());
+    let (body_translation, head_translation) = if **controller_type
+        == ControllerType::KinematicTranslation
+    {
+        (
+            -0.5 * character_settings.head_scale * Vec3::unit_y(),
+            0.5 * (character_settings.scale.y() - character_settings.head_scale) * Vec3::unit_y(),
+        )
+    } else {
+        (
+            0.5 * box_y * Vec3::unit_y(),
+            0.5 * (box_y + character_settings.scale.y()) * Vec3::unit_y(),
+        )
+    };
+    body.spawn(PbrComponents {
+        material: red,
+        mesh: cube,
+        transform: Transform::new(Mat4::from_scale_rotation_translation(
+            character_settings.scale - character_settings.head_scale * Vec3::unit_y(),
+            Quat::identity(),
+            body_translation,
+        )),
+        ..Default::default()
+    })
+    .spawn((
+        GlobalTransform::identity(),
+        Transform::from_translation_rotation(
+            head_translation,
+            Quat::from_rotation_y(character_settings.head_yaw),
+        ),
+        HeadTag,
+    ))
+    .with_children(|head| {
+        head.spawn(PbrComponents {
             material: red,
             mesh: cube,
-            transform: Transform::new(Mat4::from_scale_rotation_translation(
-                character_settings.scale - character_settings.head_scale * Vec3::unit_y(),
-                Quat::identity(),
-                body_translation,
+            transform: Transform::from_scale(character_settings.head_scale),
+            ..Default::default()
+        })
+        .spawn(Camera3dComponents {
+            transform: Transform::new(Mat4::face_toward(
+                character_settings.follow_offset,
+                character_settings.focal_point,
+                Vec3::unit_y(),
             )),
             ..Default::default()
         })
-        .spawn((
-            GlobalTransform::identity(),
-            Transform::from_translation_rotation(
-                head_translation,
-                Quat::from_rotation_y(character_settings.head_yaw),
-            ),
-            HeadTag,
-        ))
-        .with_children(|head| {
-            head.spawn(PbrComponents {
-                material: red,
-                mesh: cube,
-                transform: Transform::from_scale(character_settings.head_scale),
-                ..Default::default()
-            })
-            .spawn(Camera3dComponents {
-                transform: Transform::new(Mat4::face_toward(
-                    character_settings.follow_offset,
-                    character_settings.focal_point,
-                    Vec3::unit_y(),
-                )),
-                ..Default::default()
-            })
-            .with(LookDirection::default())
-            .with(CameraTag);
-        });
+        .with(LookDirection::default())
+        .with(CameraTag);
     });
 }
 
@@ -389,7 +438,22 @@ pub fn controller_to_physx_dynamic_force(
     }
 }
 
-pub fn controller_to_physx_yaw(
+pub fn controller_to_physx_kinematic_yaw(
+    mut reader: ResMut<ControllerEvents>,
+    yaws: Res<Events<YawEvent>>,
+    _yaw: &KinematicYawTag,
+    mut transform: Mut<Transform>,
+) {
+    let mut yaw = None;
+    for event in reader.yaws.iter(&yaws) {
+        yaw = Some(**event);
+    }
+    if let Some(yaw) = yaw {
+        transform.set_rotation(Quat::from_rotation_y(yaw));
+    }
+}
+
+pub fn controller_to_physx_dynamic_yaw(
     mut reader: ResMut<ControllerEvents>,
     yaws: Res<Events<YawEvent>>,
     mut physx: ResMut<PhysX>,
