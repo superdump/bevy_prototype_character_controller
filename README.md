@@ -28,6 +28,7 @@ Pitch and yaw are handled in the same way for both options.
 
 `cargo run --release --example rapier3d -- DynamicImpulse`
 ![Third-person Rapier 3D dynamic impulse character controller demo](https://github.com/superdump/bevy_prototype_character_controller/raw/gh-pages/images/20201017%20212543%20-%20Bevy%20Rapier%203D%20Dynamic%20Impulse%20Character%20Controller.gif)
+
 `cargo run --release --example rapier3d -- DynamicForce`
 ![Third-person Rapier 3D dynamic force character controller demo](https://github.com/superdump/bevy_prototype_character_controller/raw/gh-pages/images/20201017%20213044%20-%20Bevy%20Rapier%203D%20Dynamic%20Force%20Character%20Controller.gif)
 
@@ -42,8 +43,10 @@ Pitch and yaw are handled in the same way for both options.
 
 `cargo run --release --example physx -- KinematicTranslation`
 ![Third-person PhysX kinematic translation character controller demo](https://github.com/superdump/bevy_prototype_character_controller/raw/gh-pages/images/20201017%20224653%20-%20Bevy%20PhysX%20Kinematic%20Translation%20Character%20Controller.gif)
+
 `cargo run --release --example physx -- DynamicImpulse`
 ![Third-person PhysX dynamic impulse character controller demo](https://github.com/superdump/bevy_prototype_character_controller/raw/gh-pages/images/20201017%20224853%20-%20Bevy%20PhysX%20Dynamic%20Impulse%20Character%20Controller.gif)
+
 `cargo run --release --example physx -- DynamicForce`
 ![Third-person PhysX dynamic force character controller demo](https://github.com/superdump/bevy_prototype_character_controller/raw/gh-pages/images/20201017%20225103%20Bevy%20PhysX%20Dynamic%20Force%20Character%20Controller.gif)
 
