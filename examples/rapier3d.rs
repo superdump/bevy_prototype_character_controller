@@ -13,6 +13,7 @@ use bevy_rapier3d::{
         math::{Isometry, Vector},
     },
 };
+use clap::{arg_enum, value_t};
 use rand::Rng;
 
 // Take a look at example_utils/utils.rs for details!
@@ -20,10 +21,30 @@ use rand::Rng;
 mod utils;
 use utils::*;
 
+arg_enum! {
+    #[derive(PartialEq, Debug)]
+    pub enum ControllerType {
+        DynamicImpulse,
+        DynamicForce,
+    }
+}
+
 fn main() {
-    App::build()
-        // Generic
-        .add_resource(ClearColor(Color::hex("101010").unwrap()))
+    let matches = clap::App::new("Bevy Rapier 3D Character Controller")
+        .arg(
+            clap::Arg::from_usage("<type> Controller type. ")
+                .possible_values(&ControllerType::variants())
+                .case_insensitive(true)
+                .default_value("DynamicForce"),
+        )
+        .get_matches();
+    let controller_type =
+        value_t!(matches.value_of("type"), ControllerType).unwrap_or(ControllerType::DynamicForce);
+
+    let mut app = App::build();
+
+    // Generic
+    app.add_resource(ClearColor(Color::hex("101010").unwrap()))
         .add_resource(Msaa { samples: 4 })
         .add_default_plugins()
         .add_system(exit_on_esc_system.system())
@@ -35,19 +56,27 @@ fn main() {
         // Character controller adaptations for Rapier
         .add_system(create_mass.system())
         .add_system(constrain_rotation.system())
-        .add_system_to_stage_front(bevy::app::stage::PRE_UPDATE, body_to_velocity.system())
-        // IMPORTANT: The impulse/force systems MUST run before the physics simulation step, so they
-        // either need to be added to the end of PRE_UPDATE or the beginning of UPDATE
+        .add_system_to_stage_front(bevy::app::stage::PRE_UPDATE, body_to_velocity.system());
+
+    // IMPORTANT: The impulse/force systems MUST run before the physics simulation step, so they
+    // either need to be added to the end of PRE_UPDATE or the beginning of UPDATE
+    if controller_type == ControllerType::DynamicImpulse {
         // Option A. Apply impulses (changes in momentum)
-        // .add_system_to_stage_front(bevy::app::stage::UPDATE, controller_to_rapier_dynamic_impulse.system())
+        app.add_system_to_stage_front(
+            bevy::app::stage::UPDATE,
+            controller_to_rapier_dynamic_impulse.system(),
+        );
+    } else {
         // Option B. Apply forces (rate of change of momentum)
-        .add_system_to_stage_front(
+        app.add_system_to_stage_front(
             bevy::app::stage::UPDATE,
             controller_to_rapier_dynamic_force.system(),
-        )
-        // The yaw needs to be applied to the rigid body so this system has to
-        // be implemented for the physics engine in question
-        .add_system_to_stage_front(bevy::app::stage::UPDATE, controller_to_rapier_yaw.system())
+        );
+    }
+
+    // The yaw needs to be applied to the rigid body so this system has to
+    // be implemented for the physics engine in question
+    app.add_system_to_stage_front(bevy::app::stage::UPDATE, controller_to_rapier_yaw.system())
         // Controllers generally all want to pitch in the same way
         .add_system_to_stage_front(bevy::app::stage::UPDATE, controller_to_pitch.system())
         // Specific to this demo
