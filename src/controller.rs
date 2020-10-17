@@ -44,7 +44,7 @@ pub struct CharacterController {
     pub walk_speed: f32,
     pub run_speed: f32,
     pub jump_speed: f32,
-    velocity: Vec3,
+    pub velocity: Vec3,
     pub jumping: bool,
 }
 
