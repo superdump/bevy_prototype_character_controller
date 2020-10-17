@@ -2,8 +2,6 @@
 use crate::events::{LookDeltaEvent, LookEvent, PitchEvent, YawEvent};
 use bevy::{input::mouse::MouseMotion, prelude::*};
 
-pub struct CameraTag;
-
 #[derive(Clone, Copy)]
 pub struct LookDirection {
     pub forward: Vec3,
