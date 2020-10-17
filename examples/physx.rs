@@ -208,10 +208,11 @@ pub fn spawn_character(
                 Mass::new(80.0),
                 PhysXCapsuleControllerDesc {
                     height: character_settings.scale.y(),
-                    radius: character_settings
-                        .scale
-                        .x()
-                        .max(character_settings.scale.z()),
+                    radius: 0.5
+                        * character_settings
+                            .scale
+                            .x()
+                            .max(character_settings.scale.z()),
                     step_offset: 0.5,
                 },
             ))
