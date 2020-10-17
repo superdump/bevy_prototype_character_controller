@@ -96,6 +96,16 @@ impl ops::DerefMut for ControllerToLook {
     }
 }
 
+pub struct Mass {
+    pub mass: f32,
+}
+
+impl Mass {
+    pub fn new(mass: f32) -> Self {
+        Self { mass }
+    }
+}
+
 pub fn controller_to_look_direction(world: &mut World, resources: &mut Resources) {
     let mut controller_to_look = resources
         .get_mut::<ControllerToLook>()
