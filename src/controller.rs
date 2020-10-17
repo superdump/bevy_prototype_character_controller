@@ -53,8 +53,8 @@ impl Default for CharacterController {
         Self {
             input_map: InputMap::default(),
             fly: false,
-            walk_speed: 3.0,
-            run_speed: 6.0,
+            walk_speed: 5.0,
+            run_speed: 8.0,
             jump_speed: 6.0,
             velocity: Vec3::zero(),
             jumping: false,
