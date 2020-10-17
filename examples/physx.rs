@@ -5,6 +5,7 @@ use bevy_prototype_character_controller::{
     look::LookDirection,
 };
 use bevy_prototype_physx::*;
+use clap::{arg_enum, value_t};
 use rand::Rng;
 
 // Take a look at example_utils/utils.rs for details!
@@ -12,10 +13,37 @@ use rand::Rng;
 mod utils;
 use utils::*;
 
+arg_enum! {
+    #[derive(PartialEq, Debug)]
+    pub enum ControllerType {
+        KinematicTranslation,
+        DynamicImpulse,
+        DynamicForce,
+    }
+}
+
+impl Default for ControllerType {
+    fn default() -> Self {
+        ControllerType::DynamicForce
+    }
+}
+
 fn main() {
-    App::build()
-        // Generic
-        .add_resource(ClearColor(Color::hex("101010").unwrap()))
+    let matches = clap::App::new("Bevy PhysX 3D Character Controller")
+        .arg(
+            clap::Arg::from_usage("<type> Controller type. ")
+                .possible_values(&ControllerType::variants())
+                .case_insensitive(true)
+                .default_value("DynamicForce"),
+        )
+        .get_matches();
+    let controller_type =
+        value_t!(matches.value_of("type"), ControllerType).unwrap_or(ControllerType::DynamicForce);
+
+    let mut app = App::build();
+
+    // Generic
+    app.add_resource(ClearColor(Color::hex("101010").unwrap()))
         .add_resource(Msaa { samples: 4 })
         .add_default_plugins()
         .add_system(exit_on_esc_system.system())
@@ -27,34 +55,38 @@ fn main() {
         // Character controller adaptations for PhysX
         .add_system(create_mass.system())
         .add_system(constrain_rotation.system())
-        .add_system_to_stage_front(bevy::app::stage::PRE_UPDATE, body_to_velocity.system())
-        // IMPORTANT: The impulse/force systems MUST run before the physics simulation step, so they
-        // either need to be added to the end of PRE_UPDATE or the beginning of UPDATE
+        .add_system_to_stage_front(bevy::app::stage::PRE_UPDATE, body_to_velocity.system());
+
+    // IMPORTANT: The impulse/force systems MUST run before the physics simulation step, so they
+    // either need to be added to the end of PRE_UPDATE or the beginning of UPDATE
+    if controller_type == ControllerType::KinematicTranslation {
         // Option A. Apply translations (changes in position)
-        // .add_system_to_stage_front(
-        //     bevy::app::stage::UPDATE,
-        //     controller_to_physx_kinematic.system(),
-        // )
+        app.add_system_to_stage_front(
+            bevy::app::stage::UPDATE,
+            controller_to_physx_kinematic.system(),
+        );
+    } else if controller_type == ControllerType::DynamicImpulse {
         // Option B. Apply impulses (changes in momentum)
-        // .add_system_to_stage_front(
-        //     bevy::app::stage::UPDATE,
-        //     controller_to_physx_dynamic_impulse.system(),
-        // )
+        app.add_system_to_stage_front(
+            bevy::app::stage::UPDATE,
+            controller_to_physx_dynamic_impulse.system(),
+        );
+    } else {
         // Option C. Apply forces (rate of change of momentum)
-        .add_system_to_stage_front(
+        app.add_system_to_stage_front(
             bevy::app::stage::UPDATE,
             controller_to_physx_dynamic_force.system(),
-        )
-        // The yaw needs to be applied to the rigid body so this system has to
-        // be implemented for the physics engine in question
-        .add_system_to_stage_front(bevy::app::stage::UPDATE, controller_to_physx_yaw.system())
+        );
+    }
+
+    // The yaw needs to be applied to the rigid body so this system has to
+    // be implemented for the physics engine in question
+    app.add_system_to_stage_front(bevy::app::stage::UPDATE, controller_to_physx_yaw.system())
         // Controllers generally all want to pitch in the same way
         .add_system_to_stage_front(bevy::app::stage::UPDATE, controller_to_pitch.system())
-        // .add_system(controller_to_physx_kinematic.system())
-        .add_system(controller_to_yaw.system())
-        .add_system(controller_to_pitch.system())
         // Specific to this demo
         .init_resource::<CharacterSettings>()
+        .add_resource(controller_type)
         .add_startup_system(spawn_world.system())
         .add_startup_system(spawn_character.system())
         .run();
@@ -134,6 +166,7 @@ pub fn spawn_world(
 
 pub fn spawn_character(
     mut commands: Commands,
+    controller_type: Res<ControllerType>,
     character_settings: Res<CharacterSettings>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -142,21 +175,37 @@ pub fn spawn_character(
     let cube = meshes.add(Mesh::from(shape::Cube { size: 0.5 }));
     // Character
     let red = materials.add(Color::hex("800000").unwrap().into());
-    commands
-        .spawn((
-            GlobalTransform::identity(),
-            Transform::from_translation(Vec3::new(
-                0.0,
-                0.5 * (box_y + character_settings.scale.y()),
-                0.0,
-            )),
-            CharacterController::default(),
-            PhysXMaterialDesc {
-                static_friction: 0.5,
-                dynamic_friction: 0.5,
-                restitution: 0.6,
+
+    commands.spawn((
+        GlobalTransform::identity(),
+        Transform::from_translation(Vec3::new(
+            0.0,
+            0.5 * (box_y + character_settings.scale.y()),
+            0.0,
+        )),
+        CharacterController::default(),
+        PhysXMaterialDesc {
+            static_friction: 0.5,
+            dynamic_friction: 0.5,
+            restitution: 0.0,
+        },
+        BodyTag,
+    ));
+
+    if *controller_type == ControllerType::KinematicTranslation {
+        commands.with_bundle((
+            Mass::new(80.0),
+            PhysXCapsuleControllerDesc {
+                height: character_settings.scale.y(),
+                radius: character_settings
+                    .scale
+                    .x()
+                    .max(character_settings.scale.z()),
+                step_offset: 0.5,
             },
-            // NOTE: For dynamic impulse / force control
+        ));
+    } else {
+        commands.with_bundle((
             PhysXColliderDesc::Capsule(
                 0.5 * character_settings
                     .scale
@@ -168,60 +217,60 @@ pub fn spawn_character(
                 density: 200.0,
                 angular_damping: 0.5,
             },
-            // NOTE: For kinematic capsule controller
-            // Mass::new(80.0),
-            // PhysXCapsuleControllerDesc {
-            //     height: character_settings.scale.y(),
-            //     radius: character_settings
-            //         .scale
-            //         .x()
-            //         .max(character_settings.scale.z()),
-            //     step_offset: 0.5,
-            // },
-            BodyTag,
+        ));
+    }
+
+    commands.with_children(|body| {
+        let (body_translation, head_translation) =
+            if *controller_type == ControllerType::KinematicTranslation {
+                (
+                    -0.5 * character_settings.head_scale * Vec3::unit_y(),
+                    0.5 * (character_settings.scale.y() - character_settings.head_scale)
+                        * Vec3::unit_y(),
+                )
+            } else {
+                (
+                    0.5 * box_y * Vec3::unit_y(),
+                    0.5 * (box_y + character_settings.scale.y()) * Vec3::unit_y(),
+                )
+            };
+        body.spawn(PbrComponents {
+            material: red,
+            mesh: cube,
+            transform: Transform::new(Mat4::from_scale_rotation_translation(
+                character_settings.scale - character_settings.head_scale * Vec3::unit_y(),
+                Quat::identity(),
+                body_translation,
+            )),
+            ..Default::default()
+        })
+        .spawn((
+            GlobalTransform::identity(),
+            Transform::from_translation_rotation(
+                head_translation,
+                Quat::from_rotation_y(character_settings.head_yaw),
+            ),
+            HeadTag,
         ))
-        .with_children(|body| {
-            body.spawn(PbrComponents {
+        .with_children(|head| {
+            head.spawn(PbrComponents {
                 material: red,
                 mesh: cube,
-                transform: Transform::new(Mat4::from_scale_rotation_translation(
-                    character_settings.scale - character_settings.head_scale * Vec3::unit_y(),
-                    Quat::identity(),
-                    Vec3::new(0.0, -0.5 * character_settings.head_scale, 0.0),
+                transform: Transform::from_scale(character_settings.head_scale),
+                ..Default::default()
+            })
+            .spawn(Camera3dComponents {
+                transform: Transform::new(Mat4::face_toward(
+                    character_settings.follow_offset,
+                    character_settings.focal_point,
+                    Vec3::unit_y(),
                 )),
                 ..Default::default()
             })
-            .spawn((
-                GlobalTransform::identity(),
-                Transform::from_translation_rotation(
-                    Vec3::new(
-                        0.0,
-                        0.5 * (character_settings.scale.y() - character_settings.head_scale),
-                        0.0,
-                    ),
-                    Quat::from_rotation_y(character_settings.head_yaw),
-                ),
-                HeadTag,
-            ))
-            .with_children(|head| {
-                head.spawn(PbrComponents {
-                    material: red,
-                    mesh: cube,
-                    transform: Transform::from_scale(character_settings.head_scale),
-                    ..Default::default()
-                })
-                .spawn(Camera3dComponents {
-                    transform: Transform::new(Mat4::face_toward(
-                        character_settings.follow_offset,
-                        character_settings.focal_point,
-                        Vec3::unit_y(),
-                    )),
-                    ..Default::default()
-                })
-                .with(LookDirection::default())
-                .with(CameraTag);
-            });
+            .with(LookDirection::default())
+            .with(CameraTag);
         });
+    });
 }
 
 pub struct ConstrainedTag;
