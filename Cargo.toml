@@ -6,7 +6,7 @@ edition = "2018"
 license = "MIT"
 
 [features]
-default = [ "use_physx" ]
+default = []
 use_physx = [ "bevy_prototype_physx", "physx" ]
 use_rapier = [ "bevy_rapier3d" ]
 
