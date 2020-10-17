@@ -4,6 +4,11 @@ Implementations of character controllers that take common input events and map t
 
 This design is intended to allow use of these controller systems with whichever physics or camera setup you like. For example, you may use a kinematic rigid body in your physics engine and set its position based on the translation events, or a dynamic rigid body and apply the impulses or forces.
 
+## Features
+
+* `use_rapier` - for `bevy_rapier3d` character controller support
+* `use_physx` - for `bevy_prototype_physx` character controller support, using `physx`
+
 ## Demos
 
 ### First-Person Character Controller
@@ -26,10 +31,10 @@ You can choose between:
 
 Pitch and yaw are handled in the same way for both options.
 
-`cargo run --release --example rapier3d -- DynamicImpulse`
+`cargo run --release --features use_rapier --example rapier3d -- DynamicImpulse`
 ![Third-person Rapier 3D dynamic impulse character controller demo](https://github.com/superdump/bevy_prototype_character_controller/raw/gh-pages/images/20201017%20212543%20-%20Bevy%20Rapier%203D%20Dynamic%20Impulse%20Character%20Controller.gif)
 
-`cargo run --release --example rapier3d -- DynamicForce`
+`cargo run --release --features use_rapier --example rapier3d -- DynamicForce`
 ![Third-person Rapier 3D dynamic force character controller demo](https://github.com/superdump/bevy_prototype_character_controller/raw/gh-pages/images/20201017%20213044%20-%20Bevy%20Rapier%203D%20Dynamic%20Force%20Character%20Controller.gif)
 
 ### PhysX Third-Person Character Controller
@@ -41,13 +46,13 @@ You can choose between:
 
 Pitch and yaw are handled in the same way for both options.
 
-`cargo run --release --example physx -- KinematicTranslation`
+`cargo run --release --features use_physx --example physx -- KinematicTranslation`
 ![Third-person PhysX kinematic translation character controller demo](https://github.com/superdump/bevy_prototype_character_controller/raw/gh-pages/images/20201017%20224653%20-%20Bevy%20PhysX%20Kinematic%20Translation%20Character%20Controller.gif)
 
-`cargo run --release --example physx -- DynamicImpulse`
+`cargo run --release --features use_physx --example physx -- DynamicImpulse`
 ![Third-person PhysX dynamic impulse character controller demo](https://github.com/superdump/bevy_prototype_character_controller/raw/gh-pages/images/20201017%20224853%20-%20Bevy%20PhysX%20Dynamic%20Impulse%20Character%20Controller.gif)
 
-`cargo run --release --example physx -- DynamicForce`
+`cargo run --release --features use_physx --example physx -- DynamicForce`
 ![Third-person PhysX dynamic force character controller demo](https://github.com/superdump/bevy_prototype_character_controller/raw/gh-pages/images/20201017%20225103%20Bevy%20PhysX%20Dynamic%20Force%20Character%20Controller.gif)
 
 ## How-To
