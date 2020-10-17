@@ -99,3 +99,41 @@ impl Deref for TranslationEvent {
         &self.translation
     }
 }
+
+#[derive(Debug)]
+pub struct ImpulseEvent {
+    impulse: Vec3,
+}
+
+impl ImpulseEvent {
+    pub fn new(other: &Vec3) -> Self {
+        Self { impulse: *other }
+    }
+}
+
+impl Deref for ImpulseEvent {
+    type Target = Vec3;
+
+    fn deref(&self) -> &Self::Target {
+        &self.impulse
+    }
+}
+
+#[derive(Debug)]
+pub struct ForceEvent {
+    force: Vec3,
+}
+
+impl ForceEvent {
+    pub fn new(other: &Vec3) -> Self {
+        Self { force: *other }
+    }
+}
+
+impl Deref for ForceEvent {
+    type Target = Vec3;
+
+    fn deref(&self) -> &Self::Target {
+        &self.force
+    }
+}

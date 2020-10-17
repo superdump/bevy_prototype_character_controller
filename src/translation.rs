@@ -5,7 +5,9 @@
  */
 
 use crate::{
-    events::{LookDeltaEvent, LookEvent, PitchEvent, TranslationEvent, YawEvent},
+    events::{
+        ForceEvent, ImpulseEvent, LookDeltaEvent, LookEvent, PitchEvent, TranslationEvent, YawEvent,
+    },
     input_map::InputMap,
     look::{forward_up, input_to_look, LookDirection, MouseMotionState, MouseSettings},
 };
@@ -21,6 +23,8 @@ impl Plugin for TranslationControllerPlugin {
             .add_event::<LookEvent>()
             .add_event::<LookDeltaEvent>()
             .add_event::<TranslationEvent>()
+            .add_event::<ImpulseEvent>()
+            .add_event::<ForceEvent>()
             .init_resource::<ControllerToLook>()
             .init_resource::<MouseMotionState>()
             .init_resource::<MouseSettings>()
