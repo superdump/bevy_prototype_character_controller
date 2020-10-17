@@ -2,7 +2,7 @@ use bevy::{input::system::exit_on_esc_system, prelude::*};
 use bevy_prototype_character_controller::{
     events::{LookDeltaEvent, LookEvent, PitchEvent, TranslationEvent, YawEvent},
     look::LookDirection,
-    translation::{TranslationController, TranslationControllerPlugin},
+    translation::{CharacterController, CharacterControllerPlugin},
 };
 use rand::Rng;
 
@@ -45,7 +45,7 @@ pub fn build_app(app: &mut AppBuilder) {
     app.add_resource(ClearColor(Color::hex("101010").unwrap()))
         .add_resource(Msaa { samples: 4 })
         .add_default_plugins()
-        .add_plugin(TranslationControllerPlugin)
+        .add_plugin(CharacterControllerPlugin)
         .init_resource::<ControllerEvents>()
         .add_system(exit_on_esc_system.system())
         .add_startup_system(spawn_world.system())
@@ -112,8 +112,7 @@ pub fn spawn_character(
         .spawn((
             GlobalTransform::identity(),
             Transform::identity(),
-            // FIXME: Sync pitch and yaw with transform of camera at startup
-            TranslationController::default(),
+            CharacterController::default(),
             FakeKinematicRigidBody,
             BodyTag,
         ))
@@ -164,7 +163,7 @@ pub fn controller_to_kinematic(
     _body: &BodyTag,
     _kinematic_body: &FakeKinematicRigidBody,
     mut transform: Mut<Transform>,
-    mut controller: Mut<TranslationController>,
+    mut controller: Mut<CharacterController>,
 ) {
     for translation in reader.translations.iter(&translations) {
         transform.translate(**translation);

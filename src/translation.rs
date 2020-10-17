@@ -14,9 +14,9 @@ use crate::{
 use bevy::prelude::*;
 use std::{collections::HashMap, ops};
 
-pub struct TranslationControllerPlugin;
+pub struct CharacterControllerPlugin;
 
-impl Plugin for TranslationControllerPlugin {
+impl Plugin for CharacterControllerPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_event::<PitchEvent>()
             .add_event::<YawEvent>()
@@ -38,7 +38,7 @@ impl Plugin for TranslationControllerPlugin {
     }
 }
 
-pub struct TranslationController {
+pub struct CharacterController {
     pub input_map: InputMap,
     pub fly: bool,
     pub walk_speed: f32,
@@ -48,7 +48,7 @@ pub struct TranslationController {
     pub jumping: bool,
 }
 
-impl Default for TranslationController {
+impl Default for CharacterController {
     fn default() -> Self {
         Self {
             input_map: InputMap::default(),
@@ -100,7 +100,7 @@ pub fn controller_to_look_direction(world: &mut World, resources: &mut Resources
     let mut controller_to_look = resources
         .get_mut::<ControllerToLook>()
         .expect("Could not get ControllerToLook resource!");
-    let mut query = world.query::<(Entity, &TranslationController)>();
+    let mut query = world.query::<(Entity, &CharacterController)>();
 
     for (entity, _controller) in &mut query.iter() {
         if controller_to_look.contains_key(&entity) {
@@ -117,7 +117,7 @@ pub fn input_to_translation(
     time: Res<Time>,
     keyboard_input: Res<Input<KeyCode>>,
     mut events: ResMut<Events<TranslationEvent>>,
-    mut controller_query: Query<(Entity, &mut TranslationController)>,
+    mut controller_query: Query<(Entity, &mut CharacterController)>,
     look_direction_query: Query<&LookDirection>,
 ) {
     for (entity, mut controller) in &mut controller_query.iter() {

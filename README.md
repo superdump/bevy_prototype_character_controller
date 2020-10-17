@@ -25,7 +25,7 @@ See the examples for the different types of controller to get a better idea of h
 ### Entity structure
 
 The structure of the Character is:
-* body with Transform to set the position and yaw of the character, a TranslationController component and a tag so you can identify the body Transform for translating and yawing. Add rigid body and collider, or character controller components here.
+* body with Transform to set the position and yaw of the character, a CharacterController component and a tag so you can identify the body Transform for translating and yawing. Add rigid body and collider, or character controller components here.
   * body model
   * head with Transform offset upward to head position in y to give a point of reference for where the head / eyes are, and a tag so you can identify the head Transform for pitching. This design can be used for first- or third-person controllers.
     * head model
