@@ -10,10 +10,9 @@ use crate::{
         TranslationEvent, YawEvent,
     },
     input_map::InputMap,
-    look::{forward_up, input_to_look, LookDirection, MouseMotionState, MouseSettings},
+    look::{forward_up, input_to_look, LookDirection, LookEntity, MouseMotionState, MouseSettings},
 };
 use bevy::prelude::*;
-use std::{collections::HashMap, ops};
 
 pub struct BodyTag;
 pub struct YawTag;
@@ -32,16 +31,11 @@ impl Plugin for CharacterControllerPlugin {
             .add_event::<ImpulseEvent>()
             .add_event::<ForceEvent>()
             .init_resource::<ControllerEvents>()
-            .init_resource::<ControllerToLook>()
             .init_resource::<MouseMotionState>()
             .init_resource::<MouseSettings>()
             .add_system_to_stage_front(bevy::app::stage::PRE_UPDATE, input_to_events.system())
             .add_system_to_stage_front(bevy::app::stage::PRE_UPDATE, input_to_look.system())
-            .add_system_to_stage_front(bevy::app::stage::PRE_UPDATE, forward_up.system())
-            .add_system_to_stage_front(
-                bevy::app::stage::PRE_UPDATE,
-                controller_to_look_direction.thread_local_system(),
-            );
+            .add_system_to_stage_front(bevy::app::stage::PRE_UPDATE, forward_up.system());
     }
 }
 
@@ -85,40 +79,6 @@ impl Default for CharacterController {
     }
 }
 
-fn get_look_entity_for_entity(world: &World, entity: Entity) -> Option<Entity> {
-    if world.get::<LookDirection>(entity).is_ok() {
-        return Some(entity);
-    }
-    if let Ok(children) = world.get::<Children>(entity) {
-        for child in children.iter() {
-            let look = get_look_entity_for_entity(world, *child);
-            if look.is_some() {
-                return look;
-            }
-        }
-    }
-    None
-}
-
-#[derive(Default)]
-pub struct ControllerToLook {
-    map: HashMap<Entity, Entity>,
-}
-
-impl ops::Deref for ControllerToLook {
-    type Target = HashMap<Entity, Entity>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.map
-    }
-}
-
-impl ops::DerefMut for ControllerToLook {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.map
-    }
-}
-
 pub struct Mass {
     pub mass: f32,
 }
@@ -129,34 +89,17 @@ impl Mass {
     }
 }
 
-pub fn controller_to_look_direction(world: &mut World, resources: &mut Resources) {
-    let mut controller_to_look = resources
-        .get_mut::<ControllerToLook>()
-        .expect("Could not get ControllerToLook resource!");
-    let mut query = world.query::<(Entity, &CharacterController)>();
-
-    for (entity, _controller) in &mut query.iter() {
-        if controller_to_look.contains_key(&entity) {
-            continue;
-        }
-        let look_entity =
-            get_look_entity_for_entity(world, entity).expect("Failed to get LookDirection");
-        controller_to_look.insert(entity, look_entity);
-    }
-}
-
 pub fn input_to_events(
     time: Res<Time>,
-    controller_to_look: Res<ControllerToLook>,
     keyboard_input: Res<Input<KeyCode>>,
     mut translation_events: ResMut<Events<TranslationEvent>>,
     mut impulse_events: ResMut<Events<ImpulseEvent>>,
     mut force_events: ResMut<Events<ForceEvent>>,
-    mut controller_query: Query<(Entity, &Mass, &mut CharacterController)>,
+    mut controller_query: Query<(&Mass, &LookEntity, &mut CharacterController)>,
     look_direction_query: Query<&LookDirection>,
 ) {
     let xz = Vec3::new(1.0, 0.0, 1.0);
-    for (entity, mass, mut controller) in &mut controller_query.iter() {
+    for (mass, look_entity, mut controller) in &mut controller_query.iter() {
         controller.sim_to_render += time.delta_seconds;
 
         if keyboard_input.pressed(controller.input_map.key_forward) {
@@ -185,11 +128,8 @@ pub fn input_to_events(
         // simulation steps were taken
         controller.sim_to_render %= controller.dt;
 
-        let look_entity = controller_to_look
-            .get(&entity)
-            .expect("Failed to look up LookDirection");
         let look = look_direction_query
-            .get::<LookDirection>(*look_entity)
+            .get::<LookDirection>(look_entity.0)
             .expect("Failed to get LookDirection from Entity");
 
         // Calculate forward / right / up vectors
@@ -274,7 +214,7 @@ pub fn input_to_events(
 pub fn controller_to_yaw(
     mut reader: ResMut<ControllerEvents>,
     yaws: Res<Events<YawEvent>>,
-    _body: &BodyTag,
+    _yaw: &YawTag,
     mut transform: Mut<Transform>,
 ) {
     for yaw in reader.yaws.iter(&yaws) {

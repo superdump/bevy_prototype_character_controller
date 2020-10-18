@@ -19,6 +19,8 @@ impl Default for LookDirection {
     }
 }
 
+pub struct LookEntity(pub Entity);
+
 pub fn forward_up(settings: Res<MouseSettings>, mut look: Mut<LookDirection>) {
     let rotation = Quat::from_rotation_ypr(
         settings.yaw_pitch_roll.x(),

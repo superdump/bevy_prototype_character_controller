@@ -4,7 +4,7 @@ use bevy_prototype_character_controller::{
         BodyTag, CameraTag, CharacterController, CharacterControllerPlugin, HeadTag, Mass, YawTag,
     },
     events::{ControllerEvents, TranslationEvent},
-    look::LookDirection,
+    look::{LookDirection, LookEntity},
     physx::*,
 };
 use bevy_prototype_physx::*;
@@ -176,7 +176,7 @@ pub fn spawn_character(
     ));
 
     if *controller_type == ControllerType::KinematicTranslation {
-        commands
+        let body = commands
             .with_bundle((
                 Mass::new(80.0),
                 PhysXCapsuleControllerDesc {
@@ -189,21 +189,19 @@ pub fn spawn_character(
                     step_offset: 0.5,
                 },
             ))
-            .with_children(|body| {
-                body.spawn((GlobalTransform::identity(), Transform::identity(), YawTag))
-                    .with_children(|kinematic_yaw| {
-                        spawn_body_children(
-                            kinematic_yaw,
-                            &controller_type,
-                            &character_settings,
-                            box_y,
-                            &mut materials,
-                            &mut meshes,
-                        );
-                    });
-            });
+            .current_entity()
+            .expect("Failed to spawn body");
+        spawn_body_children(
+            &mut commands,
+            body,
+            &controller_type,
+            &character_settings,
+            box_y,
+            &mut materials,
+            &mut meshes,
+        );
     } else {
-        commands
+        let body = commands
             .with_bundle((
                 PhysXColliderDesc::Capsule(
                     0.5 * character_settings
@@ -217,21 +215,23 @@ pub fn spawn_character(
                     angular_damping: 0.5,
                 },
             ))
-            .with_children(|body| {
-                spawn_body_children(
-                    body,
-                    &controller_type,
-                    &character_settings,
-                    box_y,
-                    &mut materials,
-                    &mut meshes,
-                );
-            });
+            .current_entity()
+            .expect("Failed to spawn body");
+        spawn_body_children(
+            &mut commands,
+            body,
+            &controller_type,
+            &character_settings,
+            box_y,
+            &mut materials,
+            &mut meshes,
+        );
     }
 }
 
 fn spawn_body_children(
-    body: &mut ChildBuilder,
+    commands: &mut Commands,
+    body: Entity,
     controller_type: &Res<ControllerType>,
     character_settings: &Res<CharacterSettings>,
     box_y: f32,
@@ -239,7 +239,6 @@ fn spawn_body_children(
     meshes: &mut ResMut<Assets<Mesh>>,
 ) {
     let cube = meshes.add(Mesh::from(shape::Cube { size: 0.5 }));
-    // Character
     let red = materials.add(Color::hex("800000").unwrap().into());
     let (body_translation, head_translation) = if **controller_type
         == ControllerType::KinematicTranslation
@@ -254,31 +253,44 @@ fn spawn_body_children(
             0.5 * (box_y + character_settings.scale.y()) * Vec3::unit_y(),
         )
     };
-    body.spawn(PbrComponents {
-        material: red,
-        mesh: cube,
-        transform: Transform::new(Mat4::from_scale_rotation_translation(
-            character_settings.scale - character_settings.head_scale * Vec3::unit_y(),
-            Quat::identity(),
-            body_translation,
-        )),
-        ..Default::default()
-    })
-    .spawn((
-        GlobalTransform::identity(),
-        Transform::from_translation_rotation(
-            head_translation,
-            Quat::from_rotation_y(character_settings.head_yaw),
-        ),
-        HeadTag,
-    ))
-    .with_children(|head| {
-        head.spawn(PbrComponents {
+    let yaw = commands
+        .spawn((GlobalTransform::identity(), Transform::identity(), YawTag))
+        .current_entity()
+        .expect("Failed to spawn yaw");
+    let body_model = commands
+        .spawn(PbrComponents {
+            material: red,
+            mesh: cube,
+            transform: Transform::new(Mat4::from_scale_rotation_translation(
+                character_settings.scale - character_settings.head_scale * Vec3::unit_y(),
+                Quat::identity(),
+                body_translation,
+            )),
+            ..Default::default()
+        })
+        .current_entity()
+        .expect("Failed to spawn body_model");
+    let head = commands
+        .spawn((
+            GlobalTransform::identity(),
+            Transform::from_translation_rotation(
+                head_translation,
+                Quat::from_rotation_y(character_settings.head_yaw),
+            ),
+            HeadTag,
+        ))
+        .current_entity()
+        .expect("Failed to spawn head");
+    let head_model = commands
+        .spawn(PbrComponents {
             material: red,
             mesh: cube,
             transform: Transform::from_scale(character_settings.head_scale),
             ..Default::default()
         })
+        .current_entity()
+        .expect("Failed to spawn head_model");
+    let camera = commands
         .spawn(Camera3dComponents {
             transform: Transform::new(Mat4::face_toward(
                 character_settings.follow_offset,
@@ -287,9 +299,14 @@ fn spawn_body_children(
             )),
             ..Default::default()
         })
-        .with(LookDirection::default())
-        .with(CameraTag);
-    });
+        .with_bundle((LookDirection::default(), CameraTag))
+        .current_entity()
+        .expect("Failed to spawn camera");
+    commands
+        .insert_one(body, LookEntity(camera))
+        .push_children(body, &[yaw])
+        .push_children(yaw, &[body_model, head])
+        .push_children(head, &[head_model, camera]);
 }
 
 pub fn controller_to_physx_kinematic(
