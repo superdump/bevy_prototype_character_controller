@@ -17,8 +17,5 @@ bevy_rapier3d = { git = "https://github.com/superdump/bevy_rapier", branch = "pr
 physx = { git = "https://github.com/superdump/physx-rs", branch = "send-sync-and-locks", optional = true }
 
 [dev-dependencies]
-bevy_prototype_physx = { git = "https://github.com/superdump/bevy_prototype_physx" }
-bevy_rapier3d = { git = "https://github.com/superdump/bevy_rapier", branch = "predict-for-render", features = [ "simd-stable", "parallel" ] }
 clap = "2.33.3"
-physx = { git = "https://github.com/superdump/physx-rs", branch = "send-sync-and-locks" }
 rand = "0.7.3"
