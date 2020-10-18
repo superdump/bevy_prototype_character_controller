@@ -16,6 +16,7 @@ use bevy::prelude::*;
 use std::{collections::HashMap, ops};
 
 pub struct BodyTag;
+pub struct YawTag;
 pub struct HeadTag;
 pub struct CameraTag;
 

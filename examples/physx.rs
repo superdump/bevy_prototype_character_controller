@@ -1,7 +1,7 @@
 use bevy::{input::system::exit_on_esc_system, prelude::*};
 use bevy_prototype_character_controller::{
     controller::{
-        BodyTag, CameraTag, CharacterController, CharacterControllerPlugin, HeadTag, Mass,
+        BodyTag, CameraTag, CharacterController, CharacterControllerPlugin, HeadTag, Mass, YawTag,
     },
     events::{ControllerEvents, TranslationEvent},
     look::LookDirection,
@@ -190,21 +190,17 @@ pub fn spawn_character(
                 },
             ))
             .with_children(|body| {
-                body.spawn((
-                    GlobalTransform::identity(),
-                    Transform::identity(),
-                    KinematicYawTag,
-                ))
-                .with_children(|kinematic_yaw| {
-                    spawn_body_children(
-                        kinematic_yaw,
-                        &controller_type,
-                        &character_settings,
-                        box_y,
-                        &mut materials,
-                        &mut meshes,
-                    );
-                });
+                body.spawn((GlobalTransform::identity(), Transform::identity(), YawTag))
+                    .with_children(|kinematic_yaw| {
+                        spawn_body_children(
+                            kinematic_yaw,
+                            &controller_type,
+                            &character_settings,
+                            box_y,
+                            &mut materials,
+                            &mut meshes,
+                        );
+                    });
             });
     } else {
         commands

@@ -2,8 +2,6 @@ use crate::{controller::*, events::*};
 use bevy::prelude::*;
 use bevy_prototype_physx::*;
 
-pub struct KinematicYawTag;
-
 pub struct PhysXKinematicTranslationCharacterControllerPlugin;
 
 impl Plugin for PhysXKinematicTranslationCharacterControllerPlugin {
@@ -151,7 +149,7 @@ pub fn controller_to_physx_dynamic_force(
 pub fn controller_to_physx_kinematic_yaw(
     mut reader: ResMut<ControllerEvents>,
     yaws: Res<Events<YawEvent>>,
-    _yaw: &KinematicYawTag,
+    _yaw: &YawTag,
     mut transform: Mut<Transform>,
 ) {
     let mut yaw = None;

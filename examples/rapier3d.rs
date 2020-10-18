@@ -1,6 +1,6 @@
 use bevy::{input::system::exit_on_esc_system, prelude::*};
 use bevy_prototype_character_controller::{
-    controller::{BodyTag, CameraTag, CharacterController, HeadTag},
+    controller::{BodyTag, CameraTag, CharacterController, HeadTag, YawTag},
     look::LookDirection,
     rapier::*,
 };
@@ -159,45 +159,50 @@ pub fn spawn_character(
             BodyTag,
         ))
         .with_children(|body| {
-            body.spawn(PbrComponents {
-                material: red,
-                mesh: cube,
-                transform: Transform::new(Mat4::from_scale_rotation_translation(
-                    character_settings.scale - character_settings.head_scale * Vec3::unit_y(),
-                    Quat::identity(),
-                    Vec3::new(0.0, -0.5 * character_settings.head_scale, 0.0),
-                )),
-                ..Default::default()
-            })
-            .spawn((
-                GlobalTransform::identity(),
-                Transform::from_translation_rotation(
-                    Vec3::new(
-                        0.0,
-                        0.5 * (character_settings.scale.y() - character_settings.head_scale),
-                        0.0,
-                    ),
-                    Quat::from_rotation_y(character_settings.head_yaw),
-                ),
-                HeadTag,
-            ))
-            .with_children(|head| {
-                head.spawn(PbrComponents {
-                    material: red,
-                    mesh: cube,
-                    transform: Transform::from_scale(character_settings.head_scale),
-                    ..Default::default()
-                })
-                .spawn(Camera3dComponents {
-                    transform: Transform::new(Mat4::face_toward(
-                        character_settings.follow_offset,
-                        character_settings.focal_point,
-                        Vec3::unit_y(),
-                    )),
-                    ..Default::default()
-                })
-                .with(LookDirection::default())
-                .with(CameraTag);
-            });
+            body.spawn((GlobalTransform::identity(), Transform::identity(), YawTag))
+                .with_children(|yaw| {
+                    yaw.spawn(PbrComponents {
+                        material: red,
+                        mesh: cube,
+                        transform: Transform::new(Mat4::from_scale_rotation_translation(
+                            character_settings.scale
+                                - character_settings.head_scale * Vec3::unit_y(),
+                            Quat::identity(),
+                            Vec3::new(0.0, -0.5 * character_settings.head_scale, 0.0),
+                        )),
+                        ..Default::default()
+                    })
+                    .spawn((
+                        GlobalTransform::identity(),
+                        Transform::from_translation_rotation(
+                            Vec3::new(
+                                0.0,
+                                0.5 * (character_settings.scale.y()
+                                    - character_settings.head_scale),
+                                0.0,
+                            ),
+                            Quat::from_rotation_y(character_settings.head_yaw),
+                        ),
+                        HeadTag,
+                    ))
+                    .with_children(|head| {
+                        head.spawn(PbrComponents {
+                            material: red,
+                            mesh: cube,
+                            transform: Transform::from_scale(character_settings.head_scale),
+                            ..Default::default()
+                        })
+                        .spawn(Camera3dComponents {
+                            transform: Transform::new(Mat4::face_toward(
+                                character_settings.follow_offset,
+                                character_settings.focal_point,
+                                Vec3::unit_y(),
+                            )),
+                            ..Default::default()
+                        })
+                        .with(LookDirection::default())
+                        .with(CameraTag);
+                    });
+                });
         });
 }

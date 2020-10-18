@@ -133,23 +133,14 @@ pub fn controller_to_rapier_dynamic_force(
 pub fn controller_to_rapier_yaw(
     mut reader: ResMut<ControllerEvents>,
     yaws: Res<Events<YawEvent>>,
-    mut bodies: ResMut<RigidBodySet>,
-    _body: &BodyTag,
-    body_handle: &RigidBodyHandleComponent,
+    _yaw: &YawTag,
+    mut transform: Mut<Transform>,
 ) {
     let mut yaw = None;
     for event in reader.yaws.iter(&yaws) {
         yaw = Some(**event);
     }
     if let Some(yaw) = yaw {
-        let mut body = bodies
-            .get_mut(body_handle.handle())
-            .expect("Failed to get character body");
-        body.wake_up(true);
-        let translation = body.position.translation;
-        body.set_position(Isometry::from_parts(
-            translation,
-            na::UnitQuaternion::from_scaled_axis(Vector::y() * yaw),
-        ));
+        transform.set_rotation(Quat::from_rotation_y(yaw));
     }
 }
