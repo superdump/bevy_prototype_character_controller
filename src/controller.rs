@@ -217,8 +217,8 @@ pub fn controller_to_yaw(
     _yaw: &YawTag,
     mut transform: Mut<Transform>,
 ) {
-    for yaw in reader.yaws.iter(&yaws) {
-        transform.set_rotation(Quat::from_rotation_ypr(**yaw, 0.0, 0.0));
+    if let Some(yaw) = reader.yaws.latest(&yaws) {
+        transform.set_rotation(Quat::from_rotation_y(**yaw));
     }
 }
 

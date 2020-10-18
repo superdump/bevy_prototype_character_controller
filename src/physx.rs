@@ -9,10 +9,7 @@ impl Plugin for PhysXKinematicTranslationCharacterControllerPlugin {
         app.add_system(create_mass.system())
             .add_system(constrain_rotation.system())
             .add_system_to_stage_front(bevy::app::stage::PRE_UPDATE, body_to_velocity.system())
-            .add_system_to_stage_front(
-                bevy::app::stage::UPDATE,
-                controller_to_physx_kinematic_yaw.system(),
-            )
+            .add_system_to_stage_front(bevy::app::stage::UPDATE, controller_to_yaw.system())
             .add_system_to_stage_front(bevy::app::stage::UPDATE, controller_to_pitch.system());
     }
 }
@@ -30,10 +27,7 @@ impl Plugin for PhysXDynamicImpulseCharacterControllerPlugin {
                 bevy::app::stage::UPDATE,
                 controller_to_physx_dynamic_impulse.system(),
             )
-            .add_system_to_stage_front(
-                bevy::app::stage::UPDATE,
-                controller_to_physx_dynamic_yaw.system(),
-            )
+            .add_system_to_stage_front(bevy::app::stage::UPDATE, controller_to_yaw.system())
             .add_system_to_stage_front(bevy::app::stage::UPDATE, controller_to_pitch.system());
     }
 }
@@ -50,10 +44,7 @@ impl Plugin for PhysXDynamicForceCharacterControllerPlugin {
                 bevy::app::stage::UPDATE,
                 controller_to_physx_dynamic_force.system(),
             )
-            .add_system_to_stage_front(
-                bevy::app::stage::UPDATE,
-                controller_to_physx_dynamic_yaw.system(),
-            )
+            .add_system_to_stage_front(bevy::app::stage::UPDATE, controller_to_yaw.system())
             .add_system_to_stage_front(bevy::app::stage::UPDATE, controller_to_pitch.system());
     }
 }
@@ -143,44 +134,5 @@ pub fn controller_to_physx_dynamic_force(
             .get_dynamic_mut(body_handle.0)
             .expect("Failed to get dynamic rigid body");
         body.add_force(force, physx::rigid_body::ForceMode::Force, true);
-    }
-}
-
-pub fn controller_to_physx_kinematic_yaw(
-    mut reader: ResMut<ControllerEvents>,
-    yaws: Res<Events<YawEvent>>,
-    _yaw: &YawTag,
-    mut transform: Mut<Transform>,
-) {
-    let mut yaw = None;
-    for event in reader.yaws.iter(&yaws) {
-        yaw = Some(**event);
-    }
-    if let Some(yaw) = yaw {
-        transform.set_rotation(Quat::from_rotation_y(yaw));
-    }
-}
-
-pub fn controller_to_physx_dynamic_yaw(
-    mut reader: ResMut<ControllerEvents>,
-    yaws: Res<Events<YawEvent>>,
-    mut physx: ResMut<PhysX>,
-    _body: &BodyTag,
-    body_handle: &PhysXDynamicRigidBodyHandle,
-) {
-    let mut yaw = None;
-    for event in reader.yaws.iter(&yaws) {
-        yaw = Some(**event);
-    }
-    if let Some(yaw) = yaw {
-        let mut body = physx
-            .scene
-            .get_dynamic_mut(body_handle.0)
-            .expect("Failed to get dynamic rigid body");
-        let translation = body.get_global_pose().w_axis().truncate().into();
-        body.set_global_pose(
-            Mat4::from_rotation_translation(Quat::from_rotation_y(yaw), translation),
-            true,
-        );
     }
 }

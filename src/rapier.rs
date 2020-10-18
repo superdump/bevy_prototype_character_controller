@@ -21,7 +21,7 @@ impl Plugin for RapierDynamicImpulseCharacterControllerPlugin {
                 bevy::app::stage::UPDATE,
                 controller_to_rapier_dynamic_impulse.system(),
             )
-            .add_system_to_stage_front(bevy::app::stage::UPDATE, controller_to_rapier_yaw.system())
+            .add_system_to_stage_front(bevy::app::stage::UPDATE, controller_to_yaw.system())
             .add_system_to_stage_front(bevy::app::stage::UPDATE, controller_to_pitch.system());
     }
 }
@@ -38,7 +38,7 @@ impl Plugin for RapierDynamicForceCharacterControllerPlugin {
                 bevy::app::stage::UPDATE,
                 controller_to_rapier_dynamic_force.system(),
             )
-            .add_system_to_stage_front(bevy::app::stage::UPDATE, controller_to_rapier_yaw.system())
+            .add_system_to_stage_front(bevy::app::stage::UPDATE, controller_to_yaw.system())
             .add_system_to_stage_front(bevy::app::stage::UPDATE, controller_to_pitch.system());
     }
 }
@@ -127,20 +127,5 @@ pub fn controller_to_rapier_dynamic_force(
             .expect("Failed to get character body");
         body.wake_up(true);
         body.apply_force(Vector::new(force.x(), force.y(), force.z()));
-    }
-}
-
-pub fn controller_to_rapier_yaw(
-    mut reader: ResMut<ControllerEvents>,
-    yaws: Res<Events<YawEvent>>,
-    _yaw: &YawTag,
-    mut transform: Mut<Transform>,
-) {
-    let mut yaw = None;
-    for event in reader.yaws.iter(&yaws) {
-        yaw = Some(**event);
-    }
-    if let Some(yaw) = yaw {
-        transform.set_rotation(Quat::from_rotation_y(yaw));
     }
 }
