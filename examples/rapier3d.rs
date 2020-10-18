@@ -5,7 +5,7 @@ use bevy_prototype_character_controller::{
     rapier::*,
 };
 use bevy_rapier3d::{
-    physics::RapierPhysicsPlugin,
+    physics::{PhysicsInterpolationComponent, RapierPhysicsPlugin},
     rapier::{dynamics::RigidBodyBuilder, geometry::ColliderBuilder},
 };
 use clap::{arg_enum, value_t};
@@ -104,12 +104,13 @@ pub fn spawn_world(
     for _ in 0..20 {
         let x = rng.gen_range(-10.0, 10.0);
         let z = rng.gen_range(-10.0, 10.0);
+        let translation = Vec3::new(x, 0.5 * (cube_scale - box_y), z);
         commands
             .spawn(PbrComponents {
                 material: teal,
                 mesh: cube,
                 transform: Transform::from_translation_rotation_scale(
-                    Vec3::new(x, 0.5 * (cube_scale - box_y), z),
+                    translation,
                     Quat::identity(),
                     cube_scale,
                 ),
@@ -118,6 +119,7 @@ pub fn spawn_world(
             .with_bundle((
                 RigidBodyBuilder::new_dynamic().translation(x, 0.5 * (cube_scale - box_y), z),
                 ColliderBuilder::cuboid(0.5 * cube_scale, 0.5 * cube_scale, 0.5 * cube_scale),
+                PhysicsInterpolationComponent::new(translation, Quat::identity()),
             ));
     }
 }
@@ -150,6 +152,10 @@ pub fn spawn_character(
                     .max(character_settings.scale.z()),
             )
             .density(200.0),
+            PhysicsInterpolationComponent::new(
+                0.5 * (box_y + character_settings.scale.y()) * Vec3::unit_y(),
+                Quat::identity(),
+            ),
             BodyTag,
         ))
         .with_children(|body| {
