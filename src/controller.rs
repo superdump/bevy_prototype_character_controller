@@ -99,7 +99,7 @@ pub fn input_to_events(
     look_direction_query: Query<&LookDirection>,
 ) {
     let xz = Vec3::new(1.0, 0.0, 1.0);
-    for (mass, look_entity, mut controller) in &mut controller_query.iter() {
+    for (mass, look_entity, mut controller) in controller_query.iter_mut() {
         controller.sim_to_render += time.delta_seconds;
 
         if keyboard_input.pressed(controller.input_map.key_forward) {
@@ -218,7 +218,7 @@ pub fn controller_to_yaw(
     mut transform: Mut<Transform>,
 ) {
     if let Some(yaw) = reader.yaws.latest(&yaws) {
-        transform.set_rotation(Quat::from_rotation_y(**yaw));
+        transform.rotation = Quat::from_rotation_y(**yaw);
     }
 }
 
@@ -229,6 +229,6 @@ pub fn controller_to_pitch(
     mut transform: Mut<Transform>,
 ) {
     for pitch in reader.pitches.iter(&pitches) {
-        transform.set_rotation(Quat::from_rotation_ypr(0.0, **pitch, 0.0));
+        transform.rotation = Quat::from_rotation_ypr(0.0, **pitch, 0.0);
     }
 }

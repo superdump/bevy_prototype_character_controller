@@ -1,11 +1,10 @@
 use crate::{controller::*, events::*};
 use bevy::prelude::*;
 use bevy_rapier3d::{
-    na,
     physics::RigidBodyHandleComponent,
     rapier::{
         dynamics::RigidBodySet,
-        math::{Isometry, Vector},
+        math::Vector,
     },
 };
 
@@ -48,7 +47,7 @@ pub struct ConstrainedTag;
 pub fn constrain_rotation(
     mut commands: Commands,
     mut bodies: ResMut<RigidBodySet>,
-    mut query: Query<Without<ConstrainedTag, With<BodyTag, (Entity, &RigidBodyHandleComponent)>>>,
+    query: Query<Without<ConstrainedTag, With<BodyTag, (Entity, &RigidBodyHandleComponent)>>>,
 ) {
     for (entity, body_handle) in &mut query.iter() {
         let mut body = bodies
@@ -64,7 +63,7 @@ pub fn constrain_rotation(
 pub fn create_mass(
     mut commands: Commands,
     bodies: Res<RigidBodySet>,
-    mut query: Query<Without<Mass, (Entity, &RigidBodyHandleComponent)>>,
+    query: Query<Without<Mass, (Entity, &RigidBodyHandleComponent)>>,
 ) {
     for (entity, body_handle) in &mut query.iter() {
         let body = bodies
