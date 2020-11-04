@@ -2,10 +2,7 @@ use crate::{controller::*, events::*};
 use bevy::prelude::*;
 use bevy_rapier3d::{
     physics::RigidBodyHandleComponent,
-    rapier::{
-        dynamics::RigidBodySet,
-        math::Vector,
-    },
+    rapier::{dynamics::RigidBodySet, math::Vector},
 };
 
 pub struct RapierDynamicImpulseCharacterControllerPlugin;

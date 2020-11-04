@@ -48,7 +48,7 @@ fn main() {
     // Generic
     app.add_resource(ClearColor(Color::hex("101010").unwrap()))
         .add_resource(Msaa { samples: 4 })
-        .add_default_plugins()
+        .add_plugins(DefaultPlugins)
         .add_system(exit_on_esc_system.system())
         // Character Controller
         .add_plugin(CharacterControllerPlugin)
@@ -99,8 +99,8 @@ pub fn spawn_world(
     commands
         .spawn(PbrComponents {
             material: grey,
-            mesh: cube,
-            transform: Transform::new(Mat4::from_scale_rotation_translation(
+            mesh: cube.clone(),
+            transform: Transform::from_matrix(Mat4::from_scale_rotation_translation(
                 Vec3::new(box_xz, box_y, box_xz),
                 Quat::identity(),
                 Vec3::zero(),
@@ -127,13 +127,13 @@ pub fn spawn_world(
         let z = rng.gen_range(-10.0, 10.0);
         commands
             .spawn(PbrComponents {
-                material: teal,
-                mesh: cube,
-                transform: Transform::from_translation_rotation_scale(
-                    Vec3::new(x, 0.5 * (cube_scale + box_y), z),
+                material: teal.clone(),
+                mesh: cube.clone(),
+                transform: Transform::from_matrix(Mat4::from_scale_rotation_translation(
+                    Vec3::splat(cube_scale),
                     Quat::identity(),
-                    cube_scale,
-                ),
+                    Vec3::new(x, 0.5 * (cube_scale + box_y), z),
+                )),
                 ..Default::default()
             })
             .with_bundle((
@@ -259,9 +259,9 @@ fn spawn_body_children(
         .expect("Failed to spawn yaw");
     let body_model = commands
         .spawn(PbrComponents {
-            material: red,
-            mesh: cube,
-            transform: Transform::new(Mat4::from_scale_rotation_translation(
+            material: red.clone(),
+            mesh: cube.clone(),
+            transform: Transform::from_matrix(Mat4::from_scale_rotation_translation(
                 character_settings.scale - character_settings.head_scale * Vec3::unit_y(),
                 Quat::identity(),
                 body_translation,
@@ -273,10 +273,11 @@ fn spawn_body_children(
     let head = commands
         .spawn((
             GlobalTransform::identity(),
-            Transform::from_translation_rotation(
-                head_translation,
+            Transform::from_matrix(Mat4::from_scale_rotation_translation(
+                Vec3::one(),
                 Quat::from_rotation_y(character_settings.head_yaw),
-            ),
+                head_translation,
+            )),
             HeadTag,
         ))
         .current_entity()
@@ -285,14 +286,14 @@ fn spawn_body_children(
         .spawn(PbrComponents {
             material: red,
             mesh: cube,
-            transform: Transform::from_scale(character_settings.head_scale),
+            transform: Transform::from_scale(Vec3::splat(character_settings.head_scale)),
             ..Default::default()
         })
         .current_entity()
         .expect("Failed to spawn head_model");
     let camera = commands
         .spawn(Camera3dComponents {
-            transform: Transform::new(Mat4::face_toward(
+            transform: Transform::from_matrix(Mat4::face_toward(
                 character_settings.follow_offset,
                 character_settings.focal_point,
                 Vec3::unit_y(),
@@ -334,5 +335,5 @@ pub fn controller_to_physx_kinematic(
     }
     let new_position = position + translation;
     physx_controller.set_position(new_position);
-    transform.translate(translation);
+    transform.translation += translation;
 }

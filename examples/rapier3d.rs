@@ -41,7 +41,7 @@ fn main() {
     // Generic
     app.add_resource(ClearColor(Color::hex("101010").unwrap()))
         .add_resource(Msaa { samples: 4 })
-        .add_default_plugins()
+        .add_plugins(DefaultPlugins)
         .add_system(exit_on_esc_system.system())
         // Rapier
         .add_plugin(RapierPhysicsPlugin);
@@ -83,8 +83,8 @@ pub fn spawn_world(
     commands
         .spawn(PbrComponents {
             material: grey,
-            mesh: cube,
-            transform: Transform::new(Mat4::from_scale_rotation_translation(
+            mesh: cube.clone(),
+            transform: Transform::from_matrix(Mat4::from_scale_rotation_translation(
                 Vec3::new(box_xz, box_y, box_xz),
                 Quat::identity(),
                 Vec3::zero(),
@@ -107,13 +107,13 @@ pub fn spawn_world(
         let translation = Vec3::new(x, 0.5 * (cube_scale - box_y), z);
         commands
             .spawn(PbrComponents {
-                material: teal,
-                mesh: cube,
-                transform: Transform::from_translation_rotation_scale(
-                    translation,
+                material: teal.clone(),
+                mesh: cube.clone(),
+                transform: Transform::from_matrix(Mat4::from_scale_rotation_translation(
+                    Vec3::splat(cube_scale),
                     Quat::identity(),
-                    cube_scale,
-                ),
+                    translation,
+                )),
                 ..Default::default()
             })
             .with_bundle((
@@ -165,9 +165,9 @@ pub fn spawn_character(
         .expect("Failed to spawn yaw");
     let body_model = commands
         .spawn(PbrComponents {
-            material: red,
-            mesh: cube,
-            transform: Transform::new(Mat4::from_scale_rotation_translation(
+            material: red.clone(),
+            mesh: cube.clone(),
+            transform: Transform::from_matrix(Mat4::from_scale_rotation_translation(
                 character_settings.scale - character_settings.head_scale * Vec3::unit_y(),
                 Quat::identity(),
                 Vec3::new(0.0, -0.5 * character_settings.head_scale, 0.0),
@@ -179,14 +179,15 @@ pub fn spawn_character(
     let head = commands
         .spawn((
             GlobalTransform::identity(),
-            Transform::from_translation_rotation(
+            Transform::from_matrix(Mat4::from_scale_rotation_translation(
+                Vec3::one(),
+                Quat::from_rotation_y(character_settings.head_yaw),
                 Vec3::new(
                     0.0,
                     0.5 * (character_settings.scale.y() - character_settings.head_scale),
                     0.0,
                 ),
-                Quat::from_rotation_y(character_settings.head_yaw),
-            ),
+            )),
             HeadTag,
         ))
         .current_entity()
@@ -195,14 +196,14 @@ pub fn spawn_character(
         .spawn(PbrComponents {
             material: red,
             mesh: cube,
-            transform: Transform::from_scale(character_settings.head_scale),
+            transform: Transform::from_scale(Vec3::splat(character_settings.head_scale)),
             ..Default::default()
         })
         .current_entity()
         .expect("Failed to spawn head_model");
     let camera = commands
         .spawn(Camera3dComponents {
-            transform: Transform::new(Mat4::face_toward(
+            transform: Transform::from_matrix(Mat4::face_toward(
                 character_settings.follow_offset,
                 character_settings.focal_point,
                 Vec3::unit_y(),

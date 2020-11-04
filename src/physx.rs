@@ -54,12 +54,10 @@ pub struct ConstrainedTag;
 pub fn constrain_rotation(
     mut commands: Commands,
     mut physx: ResMut<PhysX>,
-    mut query: Query<
-        Without<ConstrainedTag, With<BodyTag, (Entity, &PhysXDynamicRigidBodyHandle)>>,
-    >,
+    query: Query<Without<ConstrainedTag, With<BodyTag, (Entity, &PhysXDynamicRigidBodyHandle)>>>,
 ) {
-    for (entity, body_handle) in &mut query.iter() {
-        let mut body = physx
+    for (entity, body_handle) in query.iter() {
+        let body = physx
             .scene
             .get_dynamic_mut(body_handle.0)
             .expect("Failed to get dynamic rigid body");
@@ -71,9 +69,9 @@ pub fn constrain_rotation(
 pub fn create_mass(
     mut commands: Commands,
     physx: Res<PhysX>,
-    mut query: Query<Without<Mass, (Entity, &PhysXDynamicRigidBodyHandle)>>,
+    query: Query<Without<Mass, (Entity, &PhysXDynamicRigidBodyHandle)>>,
 ) {
-    for (entity, body_handle) in &mut query.iter() {
+    for (entity, body_handle) in query.iter() {
         let body = physx
             .scene
             .get_dynamic(body_handle.0)
@@ -108,7 +106,7 @@ pub fn controller_to_physx_dynamic_impulse(
     }
 
     if impulse.length_squared() > 1E-6 {
-        let mut body = physx
+        let body = physx
             .scene
             .get_dynamic_mut(body_handle.0)
             .expect("Failed to get dynamic rigid body");
@@ -129,7 +127,7 @@ pub fn controller_to_physx_dynamic_force(
     }
 
     if force.length_squared() > 1E-6 {
-        let mut body = physx
+        let body = physx
             .scene
             .get_dynamic_mut(body_handle.0)
             .expect("Failed to get dynamic rigid body");

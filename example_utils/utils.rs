@@ -33,7 +33,7 @@ pub struct FakeKinematicRigidBody;
 pub fn build_app(app: &mut AppBuilder) {
     app.add_resource(ClearColor(Color::hex("101010").unwrap()))
         .add_resource(Msaa { samples: 4 })
-        .add_default_plugins()
+        .add_plugins(DefaultPlugins)
         .add_plugin(CharacterControllerPlugin)
         .init_resource::<ControllerEvents>()
         .add_system(exit_on_esc_system.system())
@@ -58,8 +58,8 @@ pub fn spawn_world(
     let grey = materials.add(Color::hex("808080").unwrap().into());
     commands.spawn(PbrComponents {
         material: grey,
-        mesh: cube,
-        transform: Transform::new(Mat4::from_scale_rotation_translation(
+        mesh: cube.clone(),
+        transform: Transform::from_matrix(Mat4::from_scale_rotation_translation(
             Vec3::new(20.0, 1.0, 20.0),
             Quat::identity(),
             -Vec3::unit_y(),
@@ -76,13 +76,13 @@ pub fn spawn_world(
         let x = rng.gen_range(-10.0, 10.0);
         let z = rng.gen_range(-10.0, 10.0);
         commands.spawn(PbrComponents {
-            material: teal,
-            mesh: cube,
-            transform: Transform::from_translation_rotation_scale(
-                Vec3::new(x, 0.5 * (cube_scale - 1.0), z),
+            material: teal.clone(),
+            mesh: cube.clone(),
+            transform: Transform::from_matrix(Mat4::from_scale_rotation_translation(
+                Vec3::splat(cube_scale),
                 Quat::identity(),
-                cube_scale,
-            ),
+                Vec3::new(x, 0.5 * (cube_scale - 1.0), z),
+            )),
             ..Default::default()
         });
     }
@@ -114,9 +114,9 @@ pub fn spawn_character(
         .expect("Failed to spawn yaw");
     let body_model = commands
         .spawn(PbrComponents {
-            material: red,
-            mesh: cube,
-            transform: Transform::new(Mat4::from_scale_rotation_translation(
+            material: red.clone(),
+            mesh: cube.clone(),
+            transform: Transform::from_matrix(Mat4::from_scale_rotation_translation(
                 character_settings.scale - character_settings.head_scale * Vec3::unit_y(),
                 Quat::identity(),
                 Vec3::new(0.0, character_settings.head_scale, 0.0),
@@ -128,11 +128,12 @@ pub fn spawn_character(
     let head = commands
         .spawn((
             GlobalTransform::identity(),
-            Transform::from_translation_rotation(
+            Transform::from_matrix(Mat4::from_scale_rotation_translation(
+                Vec3::one(),
+                Quat::from_rotation_y(character_settings.head_yaw),
                 (0.5 * character_settings.scale.y() + character_settings.head_scale)
                     * Vec3::unit_y(),
-                Quat::from_rotation_y(character_settings.head_yaw),
-            ),
+            )),
             HeadTag,
         ))
         .current_entity()
@@ -141,14 +142,14 @@ pub fn spawn_character(
         .spawn(PbrComponents {
             material: red,
             mesh: cube,
-            transform: Transform::from_scale(character_settings.head_scale),
+            transform: Transform::from_scale(Vec3::splat(character_settings.head_scale)),
             ..Default::default()
         })
         .current_entity()
         .expect("Failed to spawn head_model");
     let camera = commands
         .spawn(Camera3dComponents {
-            transform: Transform::new(Mat4::face_toward(
+            transform: Transform::from_matrix(Mat4::face_toward(
                 character_settings.follow_offset,
                 character_settings.focal_point,
                 Vec3::unit_y(),
@@ -174,13 +175,13 @@ pub fn controller_to_kinematic(
     mut controller: Mut<CharacterController>,
 ) {
     for translation in reader.translations.iter(&translations) {
-        transform.translate(**translation);
+        transform.translation += **translation;
     }
     // NOTE: This is just an example to stop falling past the initial body height
     // With a physics engine you would indicate that the body has collided with
     // something and should stop, depending on how your game works.
-    if transform.translation().y() < 0.0 {
-        *transform.value_mut().w_axis_mut().y_mut() = 0.0;
+    if transform.translation.y() < 0.0 {
+        *transform.translation.y_mut() = 0.0;
         controller.jumping = false;
     }
 }

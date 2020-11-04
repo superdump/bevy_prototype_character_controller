@@ -129,7 +129,7 @@ pub fn input_to_events(
         controller.sim_to_render %= controller.dt;
 
         let look = look_direction_query
-            .get::<LookDirection>(look_entity.0)
+            .get_component::<LookDirection>(look_entity.0)
             .expect("Failed to get LookDirection from Entity");
 
         // Calculate forward / right / up vectors
