@@ -56,6 +56,7 @@ fn main() {
         // PhysX
         .add_plugin(PhysXPlugin);
     // Character controller adaptations for PhysX
+    println!("Using {:?} method", controller_type);
     if controller_type == ControllerType::KinematicTranslation {
         // Option A. Apply translations (changes in position)
         app.add_plugin(PhysXKinematicTranslationCharacterControllerPlugin)
@@ -80,14 +81,14 @@ fn main() {
 }
 
 pub fn spawn_world(
-    mut commands: Commands,
+    commands: &mut Commands,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
-    let cube = meshes.add(Mesh::from(shape::Cube { size: 0.5 }));
+    let cube = meshes.add(Mesh::from(shape::Cube { size: 1.0 }));
 
     // Light
-    commands.spawn(LightComponents {
+    commands.spawn(LightBundle {
         transform: Transform::from_translation(Vec3::new(-15.0, 10.0, -15.0)),
         ..Default::default()
     });
@@ -97,7 +98,7 @@ pub fn spawn_world(
     let box_xz = 200.0;
     let box_y = 1.0;
     commands
-        .spawn(PbrComponents {
+        .spawn(PbrBundle {
             material: grey,
             mesh: cube.clone(),
             transform: Transform::from_matrix(Mat4::from_scale_rotation_translation(
@@ -123,10 +124,10 @@ pub fn spawn_world(
     let cube_scale = 1.0;
     let mut rng = rand::thread_rng();
     for _ in 0..20 {
-        let x = rng.gen_range(-10.0, 10.0);
-        let z = rng.gen_range(-10.0, 10.0);
+        let x = rng.gen_range(-10.0..10.0);
+        let z = rng.gen_range(-10.0..10.0);
         commands
-            .spawn(PbrComponents {
+            .spawn(PbrBundle {
                 material: teal.clone(),
                 mesh: cube.clone(),
                 transform: Transform::from_matrix(Mat4::from_scale_rotation_translation(
@@ -152,7 +153,7 @@ pub fn spawn_world(
 }
 
 pub fn spawn_character(
-    mut commands: Commands,
+    commands: &mut Commands,
     controller_type: Res<ControllerType>,
     character_settings: Res<CharacterSettings>,
     mut materials: ResMut<Assets<StandardMaterial>>,
@@ -163,7 +164,7 @@ pub fn spawn_character(
         GlobalTransform::identity(),
         Transform::from_translation(Vec3::new(
             0.0,
-            0.5 * (box_y + character_settings.scale.y()),
+            0.5 * (box_y + character_settings.scale.y),
             0.0,
         )),
         CharacterController::default(),
@@ -180,19 +181,15 @@ pub fn spawn_character(
             .with_bundle((
                 Mass::new(80.0),
                 PhysXCapsuleControllerDesc {
-                    height: character_settings.scale.y(),
-                    radius: 0.5
-                        * character_settings
-                            .scale
-                            .x()
-                            .max(character_settings.scale.z()),
+                    height: character_settings.scale.y,
+                    radius: 0.5 * character_settings.scale.x.max(character_settings.scale.z),
                     step_offset: 0.5,
                 },
             ))
             .current_entity()
             .expect("Failed to spawn body");
         spawn_body_children(
-            &mut commands,
+            commands,
             body,
             &controller_type,
             &character_settings,
@@ -204,11 +201,8 @@ pub fn spawn_character(
         let body = commands
             .with_bundle((
                 PhysXColliderDesc::Capsule(
-                    0.5 * character_settings
-                        .scale
-                        .x()
-                        .max(character_settings.scale.z()),
-                    character_settings.scale.y(),
+                    0.5 * character_settings.scale.x.max(character_settings.scale.z),
+                    character_settings.scale.y,
                 ),
                 PhysXRigidBodyDesc::Dynamic {
                     density: 200.0,
@@ -218,7 +212,7 @@ pub fn spawn_character(
             .current_entity()
             .expect("Failed to spawn body");
         spawn_body_children(
-            &mut commands,
+            commands,
             body,
             &controller_type,
             &character_settings,
@@ -238,27 +232,26 @@ fn spawn_body_children(
     materials: &mut ResMut<Assets<StandardMaterial>>,
     meshes: &mut ResMut<Assets<Mesh>>,
 ) {
-    let cube = meshes.add(Mesh::from(shape::Cube { size: 0.5 }));
+    let cube = meshes.add(Mesh::from(shape::Cube { size: 1.0 }));
     let red = materials.add(Color::hex("800000").unwrap().into());
-    let (body_translation, head_translation) = if **controller_type
-        == ControllerType::KinematicTranslation
-    {
-        (
-            -0.5 * character_settings.head_scale * Vec3::unit_y(),
-            0.5 * (character_settings.scale.y() - character_settings.head_scale) * Vec3::unit_y(),
-        )
-    } else {
-        (
-            0.5 * box_y * Vec3::unit_y(),
-            0.5 * (box_y + character_settings.scale.y()) * Vec3::unit_y(),
-        )
-    };
+    let (body_translation, head_translation) =
+        if **controller_type == ControllerType::KinematicTranslation {
+            (
+                -0.5 * character_settings.head_scale * Vec3::unit_y(),
+                0.5 * (character_settings.scale.y - character_settings.head_scale) * Vec3::unit_y(),
+            )
+        } else {
+            (
+                0.5 * box_y * Vec3::unit_y(),
+                0.5 * (box_y + character_settings.scale.y) * Vec3::unit_y(),
+            )
+        };
     let yaw = commands
         .spawn((GlobalTransform::identity(), Transform::identity(), YawTag))
         .current_entity()
         .expect("Failed to spawn yaw");
     let body_model = commands
-        .spawn(PbrComponents {
+        .spawn(PbrBundle {
             material: red.clone(),
             mesh: cube.clone(),
             transform: Transform::from_matrix(Mat4::from_scale_rotation_translation(
@@ -283,7 +276,7 @@ fn spawn_body_children(
         .current_entity()
         .expect("Failed to spawn head");
     let head_model = commands
-        .spawn(PbrComponents {
+        .spawn(PbrBundle {
             material: red,
             mesh: cube,
             transform: Transform::from_scale(Vec3::splat(character_settings.head_scale)),
@@ -292,7 +285,7 @@ fn spawn_body_children(
         .current_entity()
         .expect("Failed to spawn head_model");
     let camera = commands
-        .spawn(Camera3dComponents {
+        .spawn(Camera3dBundle {
             transform: Transform::from_matrix(Mat4::face_toward(
                 character_settings.follow_offset,
                 character_settings.focal_point,
@@ -315,10 +308,14 @@ pub fn controller_to_physx_kinematic(
     character_settings: Res<CharacterSettings>,
     mut reader: ResMut<ControllerEvents>,
     mut _physx: ResMut<PhysX>, // For synchronization
-    _body: &BodyTag,
-    mut physx_controller: Mut<PhysXController>,
-    mut transform: Mut<Transform>,
-    mut controller: Mut<CharacterController>,
+    mut query: Query<
+        (
+            &mut PhysXController,
+            &mut Transform,
+            &mut CharacterController,
+        ),
+        With<BodyTag>,
+    >,
 ) {
     let mut translation = Vec3::zero();
     for event in reader.translations.iter(&translations) {
@@ -327,13 +324,15 @@ pub fn controller_to_physx_kinematic(
     // NOTE: This is just an example to stop falling past the initial body height
     // With a physics engine you would indicate that the body has collided with
     // something and should stop, depending on how your game works.
-    let min_y = 0.5 * (1.0 + character_settings.scale.y());
-    let position = physx_controller.get_position();
-    if position.y() + translation.y() < min_y {
-        *translation.y_mut() = min_y - position.y();
-        controller.jumping = false;
+    let min_y = 0.5 * (1.0 + character_settings.scale.y);
+    for (mut physx_controller, mut transform, mut controller) in query.iter_mut() {
+        let position = physx_controller.get_position();
+        if position.y + translation.y < min_y {
+            translation.y = min_y - position.y;
+            controller.jumping = false;
+        }
+        let new_position = position + translation;
+        physx_controller.set_position(new_position);
+        transform.translation += translation;
     }
-    let new_position = position + translation;
-    physx_controller.set_position(new_position);
-    transform.translation += translation;
 }

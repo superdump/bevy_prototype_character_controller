@@ -21,15 +21,17 @@ impl Default for LookDirection {
 
 pub struct LookEntity(pub Entity);
 
-pub fn forward_up(settings: Res<MouseSettings>, mut look: Mut<LookDirection>) {
-    let rotation = Quat::from_rotation_ypr(
-        settings.yaw_pitch_roll.x(),
-        settings.yaw_pitch_roll.y(),
-        settings.yaw_pitch_roll.z(),
-    );
-    look.forward = rotation * -Vec3::unit_z();
-    look.right = rotation * Vec3::unit_x();
-    look.up = rotation * Vec3::unit_y();
+pub fn forward_up(settings: Res<MouseSettings>, mut query: Query<&mut LookDirection>) {
+    for mut look in query.iter_mut() {
+        let rotation = Quat::from_rotation_ypr(
+            settings.yaw_pitch_roll.x,
+            settings.yaw_pitch_roll.y,
+            settings.yaw_pitch_roll.z,
+        );
+        look.forward = rotation * -Vec3::unit_z();
+        look.right = rotation * Vec3::unit_x();
+        look.up = rotation * Vec3::unit_y();
+    }
 }
 
 pub struct MouseSettings {
@@ -70,15 +72,15 @@ pub fn input_to_look(
     if delta.length_squared() > 1E-6 {
         delta *= settings.sensitivity;
         settings.yaw_pitch_roll += delta.extend(0.0);
-        if settings.yaw_pitch_roll.y() > PITCH_BOUND {
-            *settings.yaw_pitch_roll.y_mut() = PITCH_BOUND;
+        if settings.yaw_pitch_roll.y > PITCH_BOUND {
+            settings.yaw_pitch_roll.y = PITCH_BOUND;
         }
-        if settings.yaw_pitch_roll.y() < -PITCH_BOUND {
-            *settings.yaw_pitch_roll.y_mut() = -PITCH_BOUND;
+        if settings.yaw_pitch_roll.y < -PITCH_BOUND {
+            settings.yaw_pitch_roll.y = -PITCH_BOUND;
         }
         look_delta_events.send(LookDeltaEvent::new(&delta.extend(0.0)));
         look_events.send(LookEvent::new(&settings.yaw_pitch_roll));
-        pitch_events.send(PitchEvent::new(settings.yaw_pitch_roll.y()));
-        yaw_events.send(YawEvent::new(settings.yaw_pitch_roll.x()));
+        pitch_events.send(PitchEvent::new(settings.yaw_pitch_roll.y));
+        yaw_events.send(YawEvent::new(settings.yaw_pitch_roll.x));
     }
 }

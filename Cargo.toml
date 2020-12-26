@@ -11,11 +11,11 @@ use_physx = [ "bevy_prototype_physx", "physx" ]
 use_rapier = [ "bevy_rapier3d" ]
 
 [dependencies]
-bevy = "0.3.0"
+bevy = "0.4"
 bevy_prototype_physx = { git = "https://github.com/superdump/bevy_prototype_physx", optional = true }
-bevy_rapier3d = { version = "0.5.0", features = [ "parallel", "simd-stable" ], optional = true }
+bevy_rapier3d = { version = "0.7", features = [ "parallel", "simd-stable" ], optional = true }
 physx = { git = "https://github.com/superdump/physx-rs", branch = "send-sync-and-locks", optional = true }
 
 [dev-dependencies]
-clap = "2.33.3"
-rand = "0.7.3"
+clap = "2.33"
+rand = "0.8"

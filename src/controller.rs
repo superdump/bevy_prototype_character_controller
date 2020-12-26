@@ -33,9 +33,9 @@ impl Plugin for CharacterControllerPlugin {
             .init_resource::<ControllerEvents>()
             .init_resource::<MouseMotionState>()
             .init_resource::<MouseSettings>()
-            .add_system_to_stage_front(bevy::app::stage::PRE_UPDATE, input_to_events.system())
-            .add_system_to_stage_front(bevy::app::stage::PRE_UPDATE, input_to_look.system())
-            .add_system_to_stage_front(bevy::app::stage::PRE_UPDATE, forward_up.system());
+            .add_system_to_stage(bevy::app::stage::PRE_UPDATE, input_to_events.system())
+            .add_system_to_stage(bevy::app::stage::PRE_UPDATE, input_to_look.system())
+            .add_system_to_stage(bevy::app::stage::PRE_UPDATE, forward_up.system());
     }
 }
 
@@ -100,7 +100,7 @@ pub fn input_to_events(
 ) {
     let xz = Vec3::new(1.0, 0.0, 1.0);
     for (mass, look_entity, mut controller) in controller_query.iter_mut() {
-        controller.sim_to_render += time.delta_seconds;
+        controller.sim_to_render += time.delta_seconds();
 
         if keyboard_input.pressed(controller.input_map.key_forward) {
             controller.input_state.forward = true;
@@ -173,7 +173,7 @@ pub fn input_to_events(
 
         // Handle jumping
         let was_jumping = controller.jumping;
-        *desired_velocity.y_mut() = if controller.input_state.jump {
+        desired_velocity.y = if controller.input_state.jump {
             controller.jumping = true;
             controller.jump_speed
         } else {
@@ -193,13 +193,13 @@ pub fn input_to_events(
             force_events.send(ForceEvent::new(&force));
         }
 
-        *controller.velocity.x_mut() = desired_velocity.x();
-        *controller.velocity.z_mut() = desired_velocity.z();
-        *controller.velocity.y_mut() = if was_jumping {
+        controller.velocity.x = desired_velocity.x;
+        controller.velocity.z = desired_velocity.z;
+        controller.velocity.y = if was_jumping {
             // Apply gravity for kinematic simulation
-            (-9.81f32).mul_add(controller.dt, controller.velocity.y())
+            (-9.81f32).mul_add(controller.dt, controller.velocity.y)
         } else {
-            desired_velocity.y()
+            desired_velocity.y
         };
 
         let translation = controller.velocity * controller.dt;
@@ -214,21 +214,23 @@ pub fn input_to_events(
 pub fn controller_to_yaw(
     mut reader: ResMut<ControllerEvents>,
     yaws: Res<Events<YawEvent>>,
-    _yaw: &YawTag,
-    mut transform: Mut<Transform>,
+    mut query: Query<&mut Transform, With<YawTag>>,
 ) {
     if let Some(yaw) = reader.yaws.latest(&yaws) {
-        transform.rotation = Quat::from_rotation_y(**yaw);
+        for mut transform in query.iter_mut() {
+            transform.rotation = Quat::from_rotation_y(**yaw);
+        }
     }
 }
 
 pub fn controller_to_pitch(
     mut reader: ResMut<ControllerEvents>,
     pitches: Res<Events<PitchEvent>>,
-    _head: &HeadTag,
-    mut transform: Mut<Transform>,
+    mut query: Query<&mut Transform, With<HeadTag>>,
 ) {
-    for pitch in reader.pitches.iter(&pitches) {
-        transform.rotation = Quat::from_rotation_ypr(0.0, **pitch, 0.0);
+    if let Some(pitch) = reader.pitches.latest(&pitches) {
+        for mut transform in query.iter_mut() {
+            transform.rotation = Quat::from_rotation_ypr(0.0, **pitch, 0.0);
+        }
     }
 }

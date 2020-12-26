@@ -11,14 +11,13 @@ impl Plugin for RapierDynamicImpulseCharacterControllerPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_plugin(CharacterControllerPlugin)
             .add_system(create_mass.system())
-            .add_system(constrain_rotation.system())
-            .add_system_to_stage_front(bevy::app::stage::PRE_UPDATE, body_to_velocity.system())
-            .add_system_to_stage_front(
-                bevy::app::stage::UPDATE,
+            .add_system_to_stage(bevy::app::stage::PRE_UPDATE, body_to_velocity.system())
+            .add_system_to_stage(
+                bevy::app::stage::PRE_UPDATE,
                 controller_to_rapier_dynamic_impulse.system(),
             )
-            .add_system_to_stage_front(bevy::app::stage::UPDATE, controller_to_yaw.system())
-            .add_system_to_stage_front(bevy::app::stage::UPDATE, controller_to_pitch.system());
+            .add_system_to_stage(bevy::app::stage::UPDATE, controller_to_yaw.system())
+            .add_system_to_stage(bevy::app::stage::UPDATE, controller_to_pitch.system());
     }
 }
 
@@ -28,80 +27,60 @@ impl Plugin for RapierDynamicForceCharacterControllerPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_plugin(CharacterControllerPlugin)
             .add_system(create_mass.system())
-            .add_system(constrain_rotation.system())
-            .add_system_to_stage_front(bevy::app::stage::PRE_UPDATE, body_to_velocity.system())
-            .add_system_to_stage_front(
-                bevy::app::stage::UPDATE,
+            .add_system_to_stage(bevy::app::stage::PRE_UPDATE, body_to_velocity.system())
+            .add_system_to_stage(
+                bevy::app::stage::PRE_UPDATE,
                 controller_to_rapier_dynamic_force.system(),
             )
-            .add_system_to_stage_front(bevy::app::stage::UPDATE, controller_to_yaw.system())
-            .add_system_to_stage_front(bevy::app::stage::UPDATE, controller_to_pitch.system());
-    }
-}
-
-pub struct ConstrainedTag;
-
-pub fn constrain_rotation(
-    mut commands: Commands,
-    mut bodies: ResMut<RigidBodySet>,
-    query: Query<Without<ConstrainedTag, With<BodyTag, (Entity, &RigidBodyHandleComponent)>>>,
-) {
-    for (entity, body_handle) in &mut query.iter() {
-        let mut body = bodies
-            .get_mut(body_handle.handle())
-            .expect("Failed to get RigidBody");
-        body.mass_properties.inv_principal_inertia_sqrt.x = 0.0;
-        body.mass_properties.inv_principal_inertia_sqrt.y = 0.0;
-        body.mass_properties.inv_principal_inertia_sqrt.z = 0.0;
-        commands.insert_one(entity, ConstrainedTag);
+            .add_system_to_stage(bevy::app::stage::UPDATE, controller_to_yaw.system())
+            .add_system_to_stage(bevy::app::stage::UPDATE, controller_to_pitch.system());
     }
 }
 
 pub fn create_mass(
-    mut commands: Commands,
+    commands: &mut Commands,
     bodies: Res<RigidBodySet>,
-    query: Query<Without<Mass, (Entity, &RigidBodyHandleComponent)>>,
+    query: Query<(Entity, &RigidBodyHandleComponent), Without<Mass>>,
 ) {
     for (entity, body_handle) in &mut query.iter() {
         let body = bodies
             .get(body_handle.handle())
             .expect("Failed to get RigidBody");
-        let mass = 1.0 / body.mass_properties.inv_mass;
+        let mass = 1.0 / body.mass_properties().inv_mass;
         commands.insert_one(entity, Mass::new(mass));
     }
 }
 
 pub fn body_to_velocity(
     bodies: Res<RigidBodySet>,
-    _body: &BodyTag,
-    body_handle: &RigidBodyHandleComponent,
-    mut controller: Mut<CharacterController>,
+    mut query: Query<(&RigidBodyHandleComponent, &mut CharacterController), With<BodyTag>>,
 ) {
-    let body = bodies
-        .get(body_handle.handle())
-        .expect("Failed to get RigidBody");
-    let velocity = body.linvel;
-    controller.velocity = Vec3::new(velocity[0], velocity[1], velocity[2]);
+    for (body_handle, mut controller) in query.iter_mut() {
+        let body = bodies
+            .get(body_handle.handle())
+            .expect("Failed to get RigidBody");
+        let velocity = body.linvel();
+        controller.velocity = Vec3::new(velocity[0], velocity[1], velocity[2]);
+    }
 }
 
 pub fn controller_to_rapier_dynamic_impulse(
     impulses: Res<Events<ImpulseEvent>>,
     mut reader: ResMut<ControllerEvents>,
     mut bodies: ResMut<RigidBodySet>,
-    _body: &BodyTag,
-    body_handle: &RigidBodyHandleComponent,
+    query: Query<&RigidBodyHandleComponent, With<BodyTag>>,
 ) {
-    let mut impulse = Vec3::zero();
-    for event in reader.impulses.iter(&impulses) {
-        impulse += **event;
-    }
-
-    if impulse.length_squared() > 1E-6 {
-        let mut body = bodies
-            .get_mut(body_handle.handle())
-            .expect("Failed to get character body");
-        body.wake_up(true);
-        body.apply_impulse(Vector::new(impulse.x(), impulse.y(), impulse.z()));
+    for body_handle in query.iter() {
+        let mut impulse = Vec3::zero();
+        for event in reader.impulses.iter(&impulses) {
+            impulse += **event;
+        }
+        if impulse.length_squared() > 1E-6 {
+            let body = bodies
+                .get_mut(body_handle.handle())
+                .expect("Failed to get character body");
+            body.apply_impulse(Vector::new(impulse.x, impulse.y, impulse.z), true);
+        }
     }
 }
 
@@ -109,8 +88,7 @@ pub fn controller_to_rapier_dynamic_force(
     forces: Res<Events<ForceEvent>>,
     mut reader: ResMut<ControllerEvents>,
     mut bodies: ResMut<RigidBodySet>,
-    _body: &BodyTag,
-    body_handle: &RigidBodyHandleComponent,
+    query: Query<&RigidBodyHandleComponent, With<BodyTag>>,
 ) {
     let mut force = Vec3::zero();
     for event in reader.forces.iter(&forces) {
@@ -118,10 +96,11 @@ pub fn controller_to_rapier_dynamic_force(
     }
 
     if force.length_squared() > 1E-6 {
-        let mut body = bodies
-            .get_mut(body_handle.handle())
-            .expect("Failed to get character body");
-        body.wake_up(true);
-        body.apply_force(Vector::new(force.x(), force.y(), force.z()));
+        for body_handle in query.iter() {
+            let body = bodies
+                .get_mut(body_handle.handle())
+                .expect("Failed to get character body");
+            body.apply_force(Vector::new(force.x, force.y, force.z), true);
+        }
     }
 }
