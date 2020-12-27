@@ -5,7 +5,7 @@ use bevy_prototype_character_controller::{
     rapier::*,
 };
 use bevy_rapier3d::{
-    physics::{PhysicsInterpolationComponent, RapierPhysicsPlugin},
+    physics::{PhysicsInterpolationComponent, RapierConfiguration, RapierPhysicsPlugin},
     rapier::{dynamics::RigidBodyBuilder, geometry::ColliderBuilder},
 };
 use clap::{arg_enum, value_t};
@@ -44,6 +44,10 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_system(exit_on_esc_system.system())
         // Rapier
+        .add_resource(RapierConfiguration {
+            time_dependent_number_of_timesteps: true,
+            ..Default::default()
+        })
         .add_plugin(RapierPhysicsPlugin);
 
     // IMPORTANT: The impulse/force systems MUST run before the physics simulation step, so they
