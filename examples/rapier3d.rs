@@ -44,11 +44,11 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_system(exit_on_esc_system.system())
         // Rapier
+        .add_plugin(RapierPhysicsPlugin)
         .add_resource(RapierConfiguration {
             time_dependent_number_of_timesteps: true,
             ..Default::default()
-        })
-        .add_plugin(RapierPhysicsPlugin);
+        });
 
     // IMPORTANT: The impulse/force systems MUST run before the physics simulation step, so they
     // either need to be added to the end of PRE_UPDATE or the beginning of UPDATE
