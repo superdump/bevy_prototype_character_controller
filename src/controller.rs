@@ -21,6 +21,8 @@ pub struct CameraTag;
 
 pub struct CharacterControllerPlugin;
 
+pub const PROCESS_INPUT_EVENTS: &str = "process_input_events";
+
 impl Plugin for CharacterControllerPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_event::<PitchEvent>()
@@ -33,13 +35,18 @@ impl Plugin for CharacterControllerPlugin {
             .init_resource::<ControllerEvents>()
             .init_resource::<MouseMotionState>()
             .init_resource::<MouseSettings>()
-            .add_system_to_stage(bevy::app::stage::PRE_UPDATE, input_to_events.system())
-            .add_system_to_stage(bevy::app::stage::PRE_UPDATE, input_to_look.system())
-            .add_system_to_stage(bevy::app::stage::PRE_UPDATE, forward_up.system());
+            .add_stage_after(
+                bevy::app::stage::PRE_UPDATE,
+                PROCESS_INPUT_EVENTS,
+                SystemStage::parallel(),
+            )
+            .add_system_to_stage(PROCESS_INPUT_EVENTS, input_to_events.system())
+            .add_system_to_stage(PROCESS_INPUT_EVENTS, input_to_look.system())
+            .add_system_to_stage(PROCESS_INPUT_EVENTS, forward_up.system());
     }
 }
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct InputState {
     pub forward: bool,
     pub backward: bool,

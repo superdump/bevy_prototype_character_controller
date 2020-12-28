@@ -52,6 +52,7 @@ fn main() {
 
     // IMPORTANT: The impulse/force systems MUST run before the physics simulation step, so they
     // either need to be added to the end of PRE_UPDATE or the beginning of UPDATE
+    println!("Using {:?} method", controller_type);
     if controller_type == ControllerType::DynamicImpulse {
         // Option A. Apply impulses (changes in momentum)
         app.add_plugin(RapierDynamicImpulseCharacterControllerPlugin);

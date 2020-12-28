@@ -7,15 +7,21 @@ use bevy_rapier3d::{
 
 pub struct RapierDynamicImpulseCharacterControllerPlugin;
 
+pub const APPLY_INPUT: &str = "apply_input";
+pub const UPDATE_VELOCITY: &str = "update_velocity";
+
 impl Plugin for RapierDynamicImpulseCharacterControllerPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_plugin(CharacterControllerPlugin)
-            .add_system(create_mass.system())
-            .add_system_to_stage(bevy::app::stage::PRE_UPDATE, body_to_velocity.system())
-            .add_system_to_stage(
-                bevy::app::stage::PRE_UPDATE,
-                controller_to_rapier_dynamic_impulse.system(),
+            .add_system_to_stage(bevy::app::stage::PRE_UPDATE, create_mass.system())
+            .add_stage_before(
+                PROCESS_INPUT_EVENTS,
+                UPDATE_VELOCITY,
+                SystemStage::parallel(),
             )
+            .add_system_to_stage(UPDATE_VELOCITY, body_to_velocity.system())
+            .add_stage_after(PROCESS_INPUT_EVENTS, APPLY_INPUT, SystemStage::parallel())
+            .add_system_to_stage(APPLY_INPUT, controller_to_rapier_dynamic_impulse.system())
             .add_system_to_stage(bevy::app::stage::UPDATE, controller_to_yaw.system())
             .add_system_to_stage(bevy::app::stage::UPDATE, controller_to_pitch.system());
     }
@@ -26,12 +32,15 @@ pub struct RapierDynamicForceCharacterControllerPlugin;
 impl Plugin for RapierDynamicForceCharacterControllerPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_plugin(CharacterControllerPlugin)
-            .add_system(create_mass.system())
-            .add_system_to_stage(bevy::app::stage::PRE_UPDATE, body_to_velocity.system())
-            .add_system_to_stage(
-                bevy::app::stage::PRE_UPDATE,
-                controller_to_rapier_dynamic_force.system(),
+            .add_system_to_stage(bevy::app::stage::PRE_UPDATE, create_mass.system())
+            .add_stage_before(
+                PROCESS_INPUT_EVENTS,
+                UPDATE_VELOCITY,
+                SystemStage::parallel(),
             )
+            .add_system_to_stage(UPDATE_VELOCITY, body_to_velocity.system())
+            .add_stage_after(PROCESS_INPUT_EVENTS, APPLY_INPUT, SystemStage::parallel())
+            .add_system_to_stage(APPLY_INPUT, controller_to_rapier_dynamic_force.system())
             .add_system_to_stage(bevy::app::stage::UPDATE, controller_to_yaw.system())
             .add_system_to_stage(bevy::app::stage::UPDATE, controller_to_pitch.system());
     }
