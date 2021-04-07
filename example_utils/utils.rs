@@ -1,4 +1,4 @@
-use bevy::{input::system::exit_on_esc_system, prelude::*};
+use bevy::{app::Events, input::system::exit_on_esc_system, prelude::*};
 use bevy_prototype_character_controller::{
     controller::{
         BodyTag, CameraTag, CharacterController, CharacterControllerPlugin, HeadTag, Mass, YawTag,
@@ -23,7 +23,7 @@ impl Default for CharacterSettings {
             head_scale: 0.3,
             head_yaw: 0.0,
             follow_offset: Vec3::new(0.0, 4.0, 8.0), // Relative to head
-            focal_point: Vec3::zero(),               // Relative to head
+            focal_point: Vec3::ZERO,                 // Relative to head
         }
     }
 }
@@ -31,8 +31,8 @@ impl Default for CharacterSettings {
 pub struct FakeKinematicRigidBody;
 
 pub fn build_app(app: &mut AppBuilder) {
-    app.add_resource(ClearColor(Color::hex("101010").unwrap()))
-        .add_resource(Msaa { samples: 4 })
+    app.insert_resource(ClearColor(Color::hex("101010").unwrap()))
+        .insert_resource(Msaa { samples: 4 })
         .add_plugins(DefaultPlugins)
         .add_plugin(CharacterControllerPlugin)
         .init_resource::<ControllerEvents>()
@@ -42,27 +42,27 @@ pub fn build_app(app: &mut AppBuilder) {
 }
 
 pub fn spawn_world(
-    commands: &mut Commands,
+    mut commands: Commands,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
     let cube = meshes.add(Mesh::from(shape::Cube { size: 1.0 }));
 
     // Light
-    commands.spawn(LightBundle {
+    commands.spawn_bundle(LightBundle {
         transform: Transform::from_translation(Vec3::new(-15.0, 10.0, -15.0)),
         ..Default::default()
     });
 
     // Ground cuboid
     let grey = materials.add(Color::hex("808080").unwrap().into());
-    commands.spawn(PbrBundle {
+    commands.spawn_bundle(PbrBundle {
         material: grey,
         mesh: cube.clone(),
         transform: Transform::from_matrix(Mat4::from_scale_rotation_translation(
             Vec3::new(20.0, 1.0, 20.0),
-            Quat::identity(),
-            -Vec3::unit_y(),
+            Quat::IDENTITY,
+            -Vec3::Y,
         )),
         ..Default::default()
     });
@@ -75,12 +75,12 @@ pub fn spawn_world(
     for _ in 0..20 {
         let x = rng.gen_range(-10.0..10.0);
         let z = rng.gen_range(-10.0..10.0);
-        commands.spawn(PbrBundle {
+        commands.spawn_bundle(PbrBundle {
             material: teal.clone(),
             mesh: cube.clone(),
             transform: Transform::from_matrix(Mat4::from_scale_rotation_translation(
                 Vec3::splat(cube_scale),
-                Quat::identity(),
+                Quat::IDENTITY,
                 Vec3::new(x, 0.5 * (cube_scale - 1.0), z),
             )),
             ..Default::default()
@@ -89,7 +89,7 @@ pub fn spawn_world(
 }
 
 pub fn spawn_character(
-    commands: &mut Commands,
+    mut commands: Commands,
     character_settings: Res<CharacterSettings>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -98,7 +98,7 @@ pub fn spawn_character(
     let red = materials.add(Color::hex("800000").unwrap().into());
 
     let body = commands
-        .spawn((
+        .spawn_bundle((
             GlobalTransform::identity(),
             Transform::identity(),
             CharacterController::default(),
@@ -106,63 +106,58 @@ pub fn spawn_character(
             Mass::new(80.0),
             BodyTag,
         ))
-        .current_entity()
-        .expect("Failed to spawn body");
+        .id();
     let yaw = commands
-        .spawn((GlobalTransform::identity(), Transform::identity(), YawTag))
-        .current_entity()
-        .expect("Failed to spawn yaw");
+        .spawn_bundle((GlobalTransform::identity(), Transform::identity(), YawTag))
+        .id();
     let body_model = commands
-        .spawn(PbrBundle {
+        .spawn_bundle(PbrBundle {
             material: red.clone(),
             mesh: cube.clone(),
             transform: Transform::from_matrix(Mat4::from_scale_rotation_translation(
-                character_settings.scale - character_settings.head_scale * Vec3::unit_y(),
-                Quat::identity(),
+                character_settings.scale - character_settings.head_scale * Vec3::Y,
+                Quat::IDENTITY,
                 Vec3::new(0.0, character_settings.head_scale, 0.0),
             )),
             ..Default::default()
         })
-        .current_entity()
-        .expect("Failed to spawn body_model");
+        .id();
     let head = commands
-        .spawn((
+        .spawn_bundle((
             GlobalTransform::identity(),
             Transform::from_matrix(Mat4::from_scale_rotation_translation(
-                Vec3::one(),
+                Vec3::ONE,
                 Quat::from_rotation_y(character_settings.head_yaw),
-                (0.5 * character_settings.scale.y + character_settings.head_scale) * Vec3::unit_y(),
+                (0.5 * character_settings.scale.y + character_settings.head_scale) * Vec3::Y,
             )),
             HeadTag,
         ))
-        .current_entity()
-        .expect("Failed to spawn head");
+        .id();
     let head_model = commands
-        .spawn(PbrBundle {
+        .spawn_bundle(PbrBundle {
             material: red,
             mesh: cube,
             transform: Transform::from_scale(Vec3::splat(character_settings.head_scale)),
             ..Default::default()
         })
-        .current_entity()
-        .expect("Failed to spawn head_model");
+        .id();
     let camera = commands
-        .spawn(Camera3dBundle {
+        .spawn_bundle(PerspectiveCameraBundle {
             transform: Transform::from_matrix(Mat4::face_toward(
                 character_settings.follow_offset,
                 character_settings.focal_point,
-                Vec3::unit_y(),
+                Vec3::Y,
             )),
             ..Default::default()
         })
-        .with_bundle((LookDirection::default(), CameraTag))
-        .current_entity()
-        .expect("Failed to spawn camera");
+        .insert_bundle((LookDirection::default(), CameraTag))
+        .id();
     commands
-        .insert_one(body, LookEntity(camera))
-        .push_children(body, &[yaw])
-        .push_children(yaw, &[body_model, head])
-        .push_children(head, &[head_model, camera]);
+        .entity(body)
+        .insert(LookEntity(camera))
+        .push_children(&[yaw]);
+    commands.entity(yaw).push_children(&[body_model, head]);
+    commands.entity(head).push_children(&[head_model, camera]);
 }
 
 pub fn controller_to_kinematic(

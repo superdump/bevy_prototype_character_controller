@@ -80,7 +80,7 @@ pub fn controller_to_rapier_dynamic_impulse(
     query: Query<&RigidBodyHandleComponent, With<BodyTag>>,
 ) {
     for body_handle in query.iter() {
-        let mut impulse = Vec3::zero();
+        let mut impulse = Vec3::ZERO;
         for event in reader.impulses.iter(&impulses) {
             impulse += **event;
         }
@@ -99,7 +99,7 @@ pub fn controller_to_rapier_dynamic_force(
     mut bodies: ResMut<RigidBodySet>,
     query: Query<&RigidBodyHandleComponent, With<BodyTag>>,
 ) {
-    let mut force = Vec3::zero();
+    let mut force = Vec3::ZERO;
     for event in reader.forces.iter(&forces) {
         force += **event;
     }

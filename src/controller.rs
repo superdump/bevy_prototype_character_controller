@@ -12,7 +12,7 @@ use crate::{
     input_map::InputMap,
     look::{forward_up, input_to_look, LookDirection, LookEntity, MouseMotionState, MouseSettings},
 };
-use bevy::prelude::*;
+use bevy::{app::Events, prelude::*};
 
 pub struct BodyTag;
 pub struct YawTag;
@@ -36,7 +36,7 @@ impl Plugin for CharacterControllerPlugin {
             .init_resource::<MouseMotionState>()
             .init_resource::<MouseSettings>()
             .add_stage_after(
-                bevy::app::stage::PRE_UPDATE,
+                bevy::app::CoreStage::PreUpdate,
                 PROCESS_INPUT_EVENTS,
                 SystemStage::parallel(),
             )
@@ -77,7 +77,7 @@ impl Default for CharacterController {
             walk_speed: 5.0,
             run_speed: 8.0,
             jump_speed: 6.0,
-            velocity: Vec3::zero(),
+            velocity: Vec3::ZERO,
             jumping: false,
             dt: 1.0 / 60.0,
             sim_to_render: 0.0,
@@ -99,9 +99,9 @@ impl Mass {
 pub fn input_to_events(
     time: Res<Time>,
     keyboard_input: Res<Input<KeyCode>>,
-    mut translation_events: ResMut<Events<TranslationEvent>>,
-    mut impulse_events: ResMut<Events<ImpulseEvent>>,
-    mut force_events: ResMut<Events<ForceEvent>>,
+    mut translation_events: EventWriter<TranslationEvent>,
+    mut impulse_events: EventWriter<ImpulseEvent>,
+    mut force_events: EventWriter<ForceEvent>,
     mut controller_query: Query<(&Mass, &LookEntity, &mut CharacterController)>,
     look_direction_query: Query<&LookDirection>,
 ) {
@@ -146,12 +146,12 @@ pub fn input_to_events(
             (
                 (look.forward * xz).normalize(),
                 (look.right * xz).normalize(),
-                Vec3::unit_y(),
+                Vec3::Y,
             )
         };
 
         // Calculate the desired velocity based on input
-        let mut desired_velocity = Vec3::zero();
+        let mut desired_velocity = Vec3::ZERO;
         if controller.input_state.forward {
             desired_velocity += forward;
         }
@@ -223,7 +223,7 @@ pub fn controller_to_yaw(
     yaws: Res<Events<YawEvent>>,
     mut query: Query<&mut Transform, With<YawTag>>,
 ) {
-    if let Some(yaw) = reader.yaws.latest(&yaws) {
+    if let Some(yaw) = reader.yaws.iter(&yaws).next() {
         for mut transform in query.iter_mut() {
             transform.rotation = Quat::from_rotation_y(**yaw);
         }
@@ -235,7 +235,7 @@ pub fn controller_to_pitch(
     pitches: Res<Events<PitchEvent>>,
     mut query: Query<&mut Transform, With<HeadTag>>,
 ) {
-    if let Some(pitch) = reader.pitches.latest(&pitches) {
+    if let Some(pitch) = reader.pitches.iter(&pitches).next() {
         for mut transform in query.iter_mut() {
             transform.rotation = Quat::from_rotation_ypr(0.0, **pitch, 0.0);
         }

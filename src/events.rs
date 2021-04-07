@@ -1,18 +1,18 @@
-use bevy::prelude::*;
+use bevy::{app::ManualEventReader, prelude::*};
 use std::ops::Deref;
 
 #[derive(Default)]
 pub struct ControllerEvents {
-    pub translations: EventReader<TranslationEvent>,
-    pub impulses: EventReader<ImpulseEvent>,
-    pub forces: EventReader<ForceEvent>,
-    pub yaws: EventReader<YawEvent>,
-    pub pitches: EventReader<PitchEvent>,
-    pub looks: EventReader<LookEvent>,
-    pub look_deltas: EventReader<LookDeltaEvent>,
+    pub translations: ManualEventReader<TranslationEvent>,
+    pub impulses: ManualEventReader<ImpulseEvent>,
+    pub forces: ManualEventReader<ForceEvent>,
+    pub yaws: ManualEventReader<YawEvent>,
+    pub pitches: ManualEventReader<PitchEvent>,
+    pub looks: ManualEventReader<LookEvent>,
+    pub look_deltas: ManualEventReader<LookDeltaEvent>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct LookDeltaEvent {
     rotation_delta: Vec3,
 }
@@ -33,7 +33,7 @@ impl Deref for LookDeltaEvent {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct LookEvent {
     rotation: Vec3,
 }
@@ -52,7 +52,7 @@ impl Deref for LookEvent {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct PitchEvent {
     pitch: f32,
 }
@@ -71,7 +71,7 @@ impl Deref for PitchEvent {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct YawEvent {
     yaw: f32,
 }
@@ -90,7 +90,7 @@ impl Deref for YawEvent {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct TranslationEvent {
     translation: Vec3,
 }
@@ -111,7 +111,7 @@ impl Deref for TranslationEvent {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct ImpulseEvent {
     impulse: Vec3,
 }
@@ -130,7 +130,7 @@ impl Deref for ImpulseEvent {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct ForceEvent {
     force: Vec3,
 }

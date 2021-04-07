@@ -1,6 +1,10 @@
 // system that converts delta axis events into pitch and yaw
 use crate::events::{LookDeltaEvent, LookEvent, PitchEvent, YawEvent};
-use bevy::{input::mouse::MouseMotion, prelude::*};
+use bevy::{
+    app::{Events, ManualEventReader},
+    input::mouse::MouseMotion,
+    prelude::*,
+};
 
 #[derive(Clone, Copy)]
 pub struct LookDirection {
@@ -12,9 +16,9 @@ pub struct LookDirection {
 impl Default for LookDirection {
     fn default() -> Self {
         Self {
-            forward: Vec3::unit_z(),
-            right: -Vec3::unit_x(),
-            up: Vec3::unit_y(),
+            forward: Vec3::Z,
+            right: -Vec3::X,
+            up: Vec3::Y,
         }
     }
 }
@@ -28,9 +32,9 @@ pub fn forward_up(settings: Res<MouseSettings>, mut query: Query<&mut LookDirect
             settings.yaw_pitch_roll.y,
             settings.yaw_pitch_roll.z,
         );
-        look.forward = rotation * -Vec3::unit_z();
-        look.right = rotation * Vec3::unit_x();
-        look.up = rotation * Vec3::unit_y();
+        look.forward = rotation * -Vec3::Z;
+        look.right = rotation * Vec3::X;
+        look.up = rotation * Vec3::Y;
     }
 }
 
@@ -43,14 +47,14 @@ impl Default for MouseSettings {
     fn default() -> Self {
         Self {
             sensitivity: 0.01,
-            yaw_pitch_roll: Vec3::zero(),
+            yaw_pitch_roll: Vec3::ZERO,
         }
     }
 }
 
 #[derive(Default)]
 pub struct MouseMotionState {
-    event_reader: EventReader<MouseMotion>,
+    event_reader: ManualEventReader<MouseMotion>,
 }
 
 const PITCH_BOUND: f32 = std::f32::consts::FRAC_PI_2 - 1E-3;
@@ -59,12 +63,12 @@ pub fn input_to_look(
     mouse_motion_events: Res<Events<MouseMotion>>,
     mut settings: ResMut<MouseSettings>,
     mut mouse_motion: ResMut<MouseMotionState>,
-    mut pitch_events: ResMut<Events<PitchEvent>>,
-    mut yaw_events: ResMut<Events<YawEvent>>,
-    mut look_events: ResMut<Events<LookEvent>>,
-    mut look_delta_events: ResMut<Events<LookDeltaEvent>>,
+    mut pitch_events: EventWriter<PitchEvent>,
+    mut yaw_events: EventWriter<YawEvent>,
+    mut look_events: EventWriter<LookEvent>,
+    mut look_delta_events: EventWriter<LookDeltaEvent>,
 ) {
-    let mut delta = Vec2::zero();
+    let mut delta = Vec2::ZERO;
     for motion in mouse_motion.event_reader.iter(&mouse_motion_events) {
         // NOTE: -= to invert
         delta -= motion.delta;

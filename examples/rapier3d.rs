@@ -91,8 +91,8 @@ pub fn spawn_world(
             mesh: cube.clone(),
             transform: Transform::from_matrix(Mat4::from_scale_rotation_translation(
                 Vec3::new(box_xz, box_y, box_xz),
-                Quat::identity(),
-                Vec3::zero(),
+                Quat::IDENTITY,
+                Vec3::ZERO,
             )),
             ..Default::default()
         })
@@ -116,7 +116,7 @@ pub fn spawn_world(
                 mesh: cube.clone(),
                 transform: Transform::from_matrix(Mat4::from_scale_rotation_translation(
                     Vec3::splat(cube_scale),
-                    Quat::identity(),
+                    Quat::IDENTITY,
                     translation,
                 )),
                 ..Default::default()
@@ -124,7 +124,7 @@ pub fn spawn_world(
             .with_bundle((
                 RigidBodyBuilder::new_dynamic().translation(x, 0.5 * (cube_scale - box_y), z),
                 ColliderBuilder::cuboid(0.5 * cube_scale, 0.5 * cube_scale, 0.5 * cube_scale),
-                PhysicsInterpolationComponent::new(translation, Quat::identity()),
+                PhysicsInterpolationComponent::new(translation, Quat::IDENTITY),
             ));
     }
 }
@@ -155,8 +155,8 @@ pub fn spawn_character(
             )
             .density(200.0),
             PhysicsInterpolationComponent::new(
-                0.5 * (box_y + character_settings.scale.y) * Vec3::unit_y(),
-                Quat::identity(),
+                0.5 * (box_y + character_settings.scale.y) * Vec3::Y,
+                Quat::IDENTITY,
             ),
             BodyTag,
         ))
@@ -171,8 +171,8 @@ pub fn spawn_character(
             material: red.clone(),
             mesh: cube.clone(),
             transform: Transform::from_matrix(Mat4::from_scale_rotation_translation(
-                character_settings.scale - character_settings.head_scale * Vec3::unit_y(),
-                Quat::identity(),
+                character_settings.scale - character_settings.head_scale * Vec3::Y,
+                Quat::IDENTITY,
                 Vec3::new(
                     0.0,
                     0.5 * (box_y + character_settings.scale.y - character_settings.head_scale)
@@ -215,7 +215,7 @@ pub fn spawn_character(
             transform: Transform::from_matrix(Mat4::face_toward(
                 character_settings.follow_offset,
                 character_settings.focal_point,
-                Vec3::unit_y(),
+                Vec3::Y,
             )),
             ..Default::default()
         })
