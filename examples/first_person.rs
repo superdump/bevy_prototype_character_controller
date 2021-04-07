@@ -9,7 +9,7 @@ use utils::{build_app, controller_to_kinematic, CharacterSettings};
 fn main() {
     let mut app = App::build();
     build_app(&mut app);
-    app.add_resource(CharacterSettings {
+    app.insert_resource(CharacterSettings {
         focal_point: -Vec3::Z,     // Relative to head
         follow_offset: Vec3::ZERO, // Relative to head
         ..Default::default()

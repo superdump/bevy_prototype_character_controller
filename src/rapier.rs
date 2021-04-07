@@ -1,5 +1,5 @@
 use crate::{controller::*, events::*};
-use bevy::prelude::*;
+use bevy::{app::Events, prelude::*};
 use bevy_rapier3d::{
     physics::RigidBodyHandleComponent,
     rapier::{dynamics::RigidBodySet, math::Vector},
@@ -13,7 +13,7 @@ pub const UPDATE_VELOCITY: &str = "update_velocity";
 impl Plugin for RapierDynamicImpulseCharacterControllerPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_plugin(CharacterControllerPlugin)
-            .add_system_to_stage(bevy::app::stage::PRE_UPDATE, create_mass.system())
+            .add_system_to_stage(bevy::app::CoreStage::PreUpdate, create_mass.system())
             .add_stage_before(
                 PROCESS_INPUT_EVENTS,
                 UPDATE_VELOCITY,
@@ -22,8 +22,8 @@ impl Plugin for RapierDynamicImpulseCharacterControllerPlugin {
             .add_system_to_stage(UPDATE_VELOCITY, body_to_velocity.system())
             .add_stage_after(PROCESS_INPUT_EVENTS, APPLY_INPUT, SystemStage::parallel())
             .add_system_to_stage(APPLY_INPUT, controller_to_rapier_dynamic_impulse.system())
-            .add_system_to_stage(bevy::app::stage::UPDATE, controller_to_yaw.system())
-            .add_system_to_stage(bevy::app::stage::UPDATE, controller_to_pitch.system());
+            .add_system_to_stage(bevy::app::CoreStage::Update, controller_to_yaw.system())
+            .add_system_to_stage(bevy::app::CoreStage::Update, controller_to_pitch.system());
     }
 }
 
@@ -32,7 +32,7 @@ pub struct RapierDynamicForceCharacterControllerPlugin;
 impl Plugin for RapierDynamicForceCharacterControllerPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_plugin(CharacterControllerPlugin)
-            .add_system_to_stage(bevy::app::stage::PRE_UPDATE, create_mass.system())
+            .add_system_to_stage(bevy::app::CoreStage::PreUpdate, create_mass.system())
             .add_stage_before(
                 PROCESS_INPUT_EVENTS,
                 UPDATE_VELOCITY,
@@ -41,13 +41,13 @@ impl Plugin for RapierDynamicForceCharacterControllerPlugin {
             .add_system_to_stage(UPDATE_VELOCITY, body_to_velocity.system())
             .add_stage_after(PROCESS_INPUT_EVENTS, APPLY_INPUT, SystemStage::parallel())
             .add_system_to_stage(APPLY_INPUT, controller_to_rapier_dynamic_force.system())
-            .add_system_to_stage(bevy::app::stage::UPDATE, controller_to_yaw.system())
-            .add_system_to_stage(bevy::app::stage::UPDATE, controller_to_pitch.system());
+            .add_system_to_stage(bevy::app::CoreStage::Update, controller_to_yaw.system())
+            .add_system_to_stage(bevy::app::CoreStage::Update, controller_to_pitch.system());
     }
 }
 
 pub fn create_mass(
-    commands: &mut Commands,
+    mut commands: Commands,
     bodies: Res<RigidBodySet>,
     query: Query<(Entity, &RigidBodyHandleComponent), Without<Mass>>,
 ) {
@@ -56,7 +56,7 @@ pub fn create_mass(
             .get(body_handle.handle())
             .expect("Failed to get RigidBody");
         let mass = 1.0 / body.mass_properties().inv_mass;
-        commands.insert_one(entity, Mass::new(mass));
+        commands.entity(entity).insert(Mass::new(mass));
     }
 }
 

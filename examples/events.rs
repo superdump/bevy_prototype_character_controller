@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{app::Events, prelude::*};
 use bevy_prototype_character_controller::events::{
     ControllerEvents, ForceEvent, ImpulseEvent, LookDeltaEvent, LookEvent, PitchEvent,
     TranslationEvent, YawEvent,

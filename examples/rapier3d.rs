@@ -39,13 +39,13 @@ fn main() {
     let mut app = App::build();
 
     // Generic
-    app.add_resource(ClearColor(Color::hex("101010").unwrap()))
-        .add_resource(Msaa { samples: 4 })
+    app.insert_resource(ClearColor(Color::hex("101010").unwrap()))
+        .insert_resource(Msaa { samples: 4 })
         .add_plugins(DefaultPlugins)
         .add_system(exit_on_esc_system.system())
         // Rapier
         .add_plugin(RapierPhysicsPlugin)
-        .add_resource(RapierConfiguration {
+        .insert_resource(RapierConfiguration {
             time_dependent_number_of_timesteps: true,
             ..Default::default()
         });
@@ -69,14 +69,14 @@ fn main() {
 }
 
 pub fn spawn_world(
-    commands: &mut Commands,
+    mut commands: Commands,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
     let cube = meshes.add(Mesh::from(shape::Cube { size: 1.0 }));
 
     // Light
-    commands.spawn(LightBundle {
+    commands.spawn_bundle(LightBundle {
         transform: Transform::from_translation(Vec3::new(-15.0, 10.0, -15.0)),
         ..Default::default()
     });
@@ -86,7 +86,7 @@ pub fn spawn_world(
     let box_xz = 200.0;
     let box_y = 1.0;
     commands
-        .spawn(PbrBundle {
+        .spawn_bundle(PbrBundle {
             material: grey,
             mesh: cube.clone(),
             transform: Transform::from_matrix(Mat4::from_scale_rotation_translation(
@@ -96,7 +96,7 @@ pub fn spawn_world(
             )),
             ..Default::default()
         })
-        .with_bundle((
+        .insert_bundle((
             RigidBodyBuilder::new_static(),
             ColliderBuilder::cuboid(0.5 * box_xz, 0.5 * box_y, 0.5 * box_xz),
         ));
@@ -111,7 +111,7 @@ pub fn spawn_world(
         let z = rng.gen_range(-10.0..10.0);
         let translation = Vec3::new(x, 0.5 * (cube_scale - box_y), z);
         commands
-            .spawn(PbrBundle {
+            .spawn_bundle(PbrBundle {
                 material: teal.clone(),
                 mesh: cube.clone(),
                 transform: Transform::from_matrix(Mat4::from_scale_rotation_translation(
@@ -121,7 +121,7 @@ pub fn spawn_world(
                 )),
                 ..Default::default()
             })
-            .with_bundle((
+            .insert_bundle((
                 RigidBodyBuilder::new_dynamic().translation(x, 0.5 * (cube_scale - box_y), z),
                 ColliderBuilder::cuboid(0.5 * cube_scale, 0.5 * cube_scale, 0.5 * cube_scale),
                 PhysicsInterpolationComponent::new(translation, Quat::IDENTITY),
@@ -130,7 +130,7 @@ pub fn spawn_world(
 }
 
 pub fn spawn_character(
-    commands: &mut Commands,
+    mut commands: Commands,
     character_settings: Res<CharacterSettings>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -139,16 +139,13 @@ pub fn spawn_character(
     let cube = meshes.add(Mesh::from(shape::Cube { size: 1.0 }));
     let red = materials.add(Color::hex("800000").unwrap().into());
     let body = commands
-        .spawn((
+        .spawn_bundle((
             GlobalTransform::identity(),
             Transform::identity(),
             CharacterController::default(),
             RigidBodyBuilder::new_dynamic()
                 .translation(0.0, 0.5 * (box_y + character_settings.scale.y), 0.0)
-                .principal_angular_inertia(
-                    bevy_rapier3d::rapier::na::Vector3::zeros(),
-                    bevy_rapier3d::rapier::na::Vector3::repeat(false),
-                ),
+                .lock_rotations(),
             ColliderBuilder::capsule_y(
                 0.5 * character_settings.scale.y,
                 0.5 * character_settings.scale.x.max(character_settings.scale.z),
@@ -160,14 +157,12 @@ pub fn spawn_character(
             ),
             BodyTag,
         ))
-        .current_entity()
-        .expect("Failed to spawn body");
+        .id();
     let yaw = commands
-        .spawn((GlobalTransform::identity(), Transform::identity(), YawTag))
-        .current_entity()
-        .expect("Failed to spawn yaw");
+        .spawn_bundle((GlobalTransform::identity(), Transform::identity(), YawTag))
+        .id();
     let body_model = commands
-        .spawn(PbrBundle {
+        .spawn_bundle(PbrBundle {
             material: red.clone(),
             mesh: cube.clone(),
             transform: Transform::from_matrix(Mat4::from_scale_rotation_translation(
@@ -182,13 +177,12 @@ pub fn spawn_character(
             )),
             ..Default::default()
         })
-        .current_entity()
-        .expect("Failed to spawn body_model");
+        .id();
     let head = commands
-        .spawn((
+        .spawn_bundle((
             GlobalTransform::identity(),
             Transform::from_matrix(Mat4::from_scale_rotation_translation(
-                Vec3::one(),
+                Vec3::ONE,
                 Quat::from_rotation_y(character_settings.head_yaw),
                 Vec3::new(
                     0.0,
@@ -199,19 +193,17 @@ pub fn spawn_character(
             )),
             HeadTag,
         ))
-        .current_entity()
-        .expect("Failed to spawn head");
+        .id();
     let head_model = commands
-        .spawn(PbrBundle {
+        .spawn_bundle(PbrBundle {
             material: red,
             mesh: cube,
             transform: Transform::from_scale(Vec3::splat(character_settings.head_scale)),
             ..Default::default()
         })
-        .current_entity()
-        .expect("Failed to spawn head_model");
+        .id();
     let camera = commands
-        .spawn(Camera3dBundle {
+        .spawn_bundle(PerspectiveCameraBundle {
             transform: Transform::from_matrix(Mat4::face_toward(
                 character_settings.follow_offset,
                 character_settings.focal_point,
@@ -219,12 +211,12 @@ pub fn spawn_character(
             )),
             ..Default::default()
         })
-        .with_bundle((LookDirection::default(), CameraTag))
-        .current_entity()
-        .expect("Failed to spawn camera");
+        .insert_bundle((LookDirection::default(), CameraTag))
+        .id();
     commands
-        .insert_one(body, LookEntity(camera))
-        .push_children(body, &[yaw])
-        .push_children(yaw, &[body_model, head])
-        .push_children(head, &[head_model, camera]);
+        .entity(body)
+        .insert(LookEntity(camera))
+        .push_children(&[yaw]);
+    commands.entity(yaw).push_children(&[body_model, head]);
+    commands.entity(head).push_children(&[head_model, camera]);
 }
