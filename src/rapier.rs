@@ -9,16 +9,23 @@ pub const CONTROLLER_TO_RAPIER_DYNAMIC_IMPULSE_SYSTEM: &str =
     "controller_to_rapier_dynamic_impulse";
 pub const CONTROLLER_TO_RAPIER_DYNAMIC_FORCE_SYSTEM: &str = "controller_to_rapier_dynamic_force";
 pub const CREATE_MASS_FROM_RAPIER_SYSTEM: &str = "create_mass_from_rapier";
+pub const TOGGLE_FLY_MODE_SYSTEM: &str = "toggle_fly_mode";
 
 impl Plugin for RapierDynamicImpulseCharacterControllerPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_plugin(CharacterControllerPlugin)
             .add_system_to_stage(
                 CoreStage::PreUpdate,
+                toggle_fly_mode
+                    .system()
+                    .label(TOGGLE_FLY_MODE_SYSTEM)
+                    .after(INPUT_TO_EVENTS_SYSTEM),
+            )
+            // NOTE: This must come after the bevy_rapier3d finalize_collider_attach_to_bodies system
+            .add_system(
                 create_mass_from_rapier
                     .system()
-                    .label(CREATE_MASS_FROM_RAPIER_SYSTEM)
-                    .before(INPUT_TO_EVENTS_SYSTEM),
+                    .label(CREATE_MASS_FROM_RAPIER_SYSTEM),
             )
             .add_system(body_to_velocity.system().label(BODY_TO_VELOCITY_SYSTEM))
             .add_system(
@@ -39,10 +46,16 @@ impl Plugin for RapierDynamicForceCharacterControllerPlugin {
         app.add_plugin(CharacterControllerPlugin)
             .add_system_to_stage(
                 CoreStage::PreUpdate,
+                toggle_fly_mode
+                    .system()
+                    .label(TOGGLE_FLY_MODE_SYSTEM)
+                    .after(INPUT_TO_EVENTS_SYSTEM),
+            )
+            // NOTE: This must come after the bevy_rapier3d finalize_collider_attach_to_bodies system
+            .add_system(
                 create_mass_from_rapier
                     .system()
-                    .label(CREATE_MASS_FROM_RAPIER_SYSTEM)
-                    .before(INPUT_TO_EVENTS_SYSTEM),
+                    .label(CREATE_MASS_FROM_RAPIER_SYSTEM),
             )
             .add_system(body_to_velocity.system().label(BODY_TO_VELOCITY_SYSTEM))
             .add_system(
@@ -110,6 +123,27 @@ pub fn controller_to_rapier_dynamic_force(
         for (mut forces, mut activation) in query.iter_mut() {
             forces.force = force.into();
             activation.wake_up(true);
+        }
+    }
+}
+
+const NO_GRAVITY: [f32; 3] = [0.0, 0.0, 0.0];
+const GRAVITY: [f32; 3] = [0.0, -9.81, 0.0];
+
+fn toggle_fly_mode(
+    keyboard_input: Res<Input<KeyCode>>,
+    mut rapier_config: ResMut<RapierConfiguration>,
+    mut query: Query<(&CharacterController, &mut ColliderFlags)>,
+) {
+    for (controller, mut collider_flags) in query.iter_mut() {
+        if keyboard_input.just_pressed(controller.input_map.key_fly) {
+            rapier_config.gravity = if controller.fly {
+                collider_flags.collision_groups = InteractionGroups::none();
+                NO_GRAVITY.into()
+            } else {
+                collider_flags.collision_groups = InteractionGroups::default();
+                GRAVITY.into()
+            };
         }
     }
 }

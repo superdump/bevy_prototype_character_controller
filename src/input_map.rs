@@ -10,6 +10,9 @@ pub struct InputMap {
     pub key_run: KeyCode,
     pub key_crouch: KeyCode,
     pub invert_y: bool,
+    pub key_fly: KeyCode,
+    pub key_fly_up: KeyCode,
+    pub key_fly_down: KeyCode,
 }
 
 impl Default for InputMap {
@@ -23,6 +26,9 @@ impl Default for InputMap {
             key_run: KeyCode::LShift,
             key_crouch: KeyCode::LControl,
             invert_y: false,
+            key_fly: KeyCode::F,
+            key_fly_up: KeyCode::E,
+            key_fly_down: KeyCode::Q,
         }
     }
 }

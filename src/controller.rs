@@ -61,6 +61,8 @@ pub struct InputState {
     pub right: bool,
     pub run: bool,
     pub jump: bool,
+    pub up: bool,
+    pub down: bool,
 }
 
 #[derive(Debug)]
@@ -118,6 +120,9 @@ pub fn input_to_events(
     for (mass, look_entity, mut controller) in controller_query.iter_mut() {
         controller.sim_to_render += time.delta_seconds();
 
+        if keyboard_input.just_pressed(controller.input_map.key_fly) {
+            controller.fly = !controller.fly;
+        }
         if keyboard_input.pressed(controller.input_map.key_forward) {
             controller.input_state.forward = true;
         }
@@ -136,6 +141,12 @@ pub fn input_to_events(
         if keyboard_input.just_pressed(controller.input_map.key_jump) {
             controller.input_state.jump = true;
         }
+        if keyboard_input.pressed(controller.input_map.key_fly_up) {
+            controller.input_state.up = true;
+        }
+        if keyboard_input.pressed(controller.input_map.key_fly_down) {
+            controller.input_state.down = true;
+        }
 
         if controller.sim_to_render < controller.dt {
             continue;
@@ -149,7 +160,7 @@ pub fn input_to_events(
             .expect("Failed to get LookDirection from Entity");
 
         // Calculate forward / right / up vectors
-        let (forward, right, _up) = if controller.fly {
+        let (forward, right, up) = if controller.fly {
             (look.forward, look.right, look.up)
         } else {
             (
@@ -173,6 +184,12 @@ pub fn input_to_events(
         if controller.input_state.left {
             desired_velocity -= right;
         }
+        if controller.input_state.up {
+            desired_velocity += up;
+        }
+        if controller.input_state.down {
+            desired_velocity -= up;
+        }
 
         // Limit x/z velocity to walk/run speed
         let speed = if controller.input_state.run {
@@ -189,15 +206,18 @@ pub fn input_to_events(
 
         // Handle jumping
         let was_jumping = controller.jumping;
-        desired_velocity.y = if controller.input_state.jump {
-            controller.jumping = true;
-            controller.jump_speed
-        } else {
-            0.0
-        };
+        if !controller.fly {
+            desired_velocity.y = if controller.input_state.jump {
+                controller.jumping = true;
+                controller.jump_speed
+            } else {
+                0.0
+            };
+        }
 
         // Calculate impulse - the desired momentum change for the time period
-        let delta_velocity = desired_velocity - controller.velocity * xz;
+        let delta_velocity =
+            desired_velocity - controller.velocity * if controller.fly { Vec3::ONE } else { xz };
         let impulse = delta_velocity * mass.mass;
         if impulse.length_squared() > 1E-6 {
             impulse_events.send(ImpulseEvent::new(&impulse));
@@ -211,7 +231,7 @@ pub fn input_to_events(
 
         controller.velocity.x = desired_velocity.x;
         controller.velocity.z = desired_velocity.z;
-        controller.velocity.y = if was_jumping {
+        controller.velocity.y = if !controller.fly && was_jumping {
             // Apply gravity for kinematic simulation
             (-9.81f32).mul_add(controller.dt, controller.velocity.y)
         } else {
