@@ -3,7 +3,7 @@ use bevy_prototype_character_controller::{
     controller::{
         BodyTag, CameraTag, CharacterController, CharacterControllerPlugin, HeadTag, Mass, YawTag,
     },
-    events::{ControllerEvents, TranslationEvent},
+    events::TranslationEvent,
     look::{LookDirection, LookEntity},
     physx::*,
 };
@@ -52,7 +52,6 @@ fn main() {
         .add_system(exit_on_esc_system.system())
         // Character Controller
         .add_plugin(CharacterControllerPlugin)
-        .init_resource::<ControllerEvents>()
         // PhysX
         .add_plugin(PhysXPlugin);
     // Character controller adaptations for PhysX
@@ -60,10 +59,7 @@ fn main() {
     if controller_type == ControllerType::KinematicTranslation {
         // Option A. Apply translations (changes in position)
         app.add_plugin(PhysXKinematicTranslationCharacterControllerPlugin)
-            .add_system_to_stage(
-                bevy::app::CoreStage::Update,
-                controller_to_physx_kinematic.system(),
-            );
+            .add_system_to_stage(CoreStage::Update, controller_to_physx_kinematic.system());
     } else if controller_type == ControllerType::DynamicImpulse {
         // Option B. Apply impulses (changes in momentum)
         app.add_plugin(PhysXDynamicImpulseCharacterControllerPlugin);
@@ -298,9 +294,8 @@ fn spawn_body_children(
 }
 
 pub fn controller_to_physx_kinematic(
-    translations: Res<Events<TranslationEvent>>,
+    mut translations: EventReader<TranslationEvent>,
     character_settings: Res<CharacterSettings>,
-    mut reader: ResMut<ControllerEvents>,
     mut _physx: ResMut<PhysX>, // For synchronization
     mut query: Query<
         (
@@ -312,7 +307,7 @@ pub fn controller_to_physx_kinematic(
     >,
 ) {
     let mut translation = Vec3::ZERO;
-    for event in reader.translations.iter(&translations) {
+    for event in translations.iter() {
         translation += **event;
     }
     // NOTE: This is just an example to stop falling past the initial body height

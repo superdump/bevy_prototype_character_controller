@@ -1,7 +1,6 @@
-use bevy::{app::Events, prelude::*};
+use bevy::prelude::*;
 use bevy_prototype_character_controller::events::{
-    ControllerEvents, ForceEvent, ImpulseEvent, LookDeltaEvent, LookEvent, PitchEvent,
-    TranslationEvent, YawEvent,
+    ForceEvent, ImpulseEvent, LookDeltaEvent, LookEvent, PitchEvent, TranslationEvent, YawEvent,
 };
 
 // Take a look at example_utils/utils.rs for details!
@@ -18,34 +17,33 @@ fn main() {
 }
 
 fn print_controller_events(
-    mut reader: ResMut<ControllerEvents>,
-    translations: Res<Events<TranslationEvent>>,
-    impulses: Res<Events<ImpulseEvent>>,
-    forces: Res<Events<ForceEvent>>,
-    pitches: Res<Events<PitchEvent>>,
-    yaws: Res<Events<YawEvent>>,
-    looks: Res<Events<LookEvent>>,
-    look_deltas: Res<Events<LookDeltaEvent>>,
+    mut translations: EventReader<TranslationEvent>,
+    mut impulses: EventReader<ImpulseEvent>,
+    mut forces: EventReader<ForceEvent>,
+    mut pitches: EventReader<PitchEvent>,
+    mut yaws: EventReader<YawEvent>,
+    mut looks: EventReader<LookEvent>,
+    mut look_deltas: EventReader<LookDeltaEvent>,
 ) {
-    for event in reader.translations.iter(&translations) {
+    for event in translations.iter() {
         println!("{:?}", event);
     }
-    for event in reader.impulses.iter(&impulses) {
+    for event in impulses.iter() {
         println!("{:?}", event);
     }
-    for event in reader.forces.iter(&forces) {
+    for event in forces.iter() {
         println!("{:?}", event);
     }
-    for event in reader.pitches.iter(&pitches) {
+    for event in pitches.iter() {
         println!("{:?}", event);
     }
-    for event in reader.yaws.iter(&yaws) {
+    for event in yaws.iter() {
         println!("{:?}", event);
     }
-    for event in reader.looks.iter(&looks) {
+    for event in looks.iter() {
         println!("{:?}", event);
     }
-    for event in reader.look_deltas.iter(&look_deltas) {
+    for event in look_deltas.iter() {
         println!("{:?}", event);
     }
 }

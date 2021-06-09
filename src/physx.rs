@@ -8,9 +8,9 @@ impl Plugin for PhysXKinematicTranslationCharacterControllerPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_system(create_mass.system())
             .add_system(constrain_rotation.system())
-            .add_system_to_stage(bevy::app::CoreStage::PreUpdate, body_to_velocity.system())
-            .add_system_to_stage(bevy::app::CoreStage::Update, controller_to_yaw.system())
-            .add_system_to_stage(bevy::app::CoreStage::Update, controller_to_pitch.system());
+            .add_system_to_stage(CoreStage::PreUpdate, body_to_velocity.system())
+            .add_system(controller_to_yaw.system())
+            .add_system(controller_to_pitch.system());
     }
 }
 
@@ -20,15 +20,15 @@ impl Plugin for PhysXDynamicImpulseCharacterControllerPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_system(create_mass.system())
             .add_system(constrain_rotation.system())
-            .add_system_to_stage(bevy::app::CoreStage::PreUpdate, body_to_velocity.system())
+            .add_system_to_stage(CoreStage::PreUpdate, body_to_velocity.system())
             // IMPORTANT: The impulse/force systems MUST run before the physics simulation step, so they
             // either need to be added to the end of PRE_UPDATE or the beginning of UPDATE
             .add_system_to_stage(
-                bevy::app::CoreStage::PreUpdate,
+                CoreStage::PreUpdate,
                 controller_to_physx_dynamic_impulse.system(),
             )
-            .add_system_to_stage(bevy::app::CoreStage::Update, controller_to_yaw.system())
-            .add_system_to_stage(bevy::app::CoreStage::Update, controller_to_pitch.system());
+            .add_system(controller_to_yaw.system())
+            .add_system(controller_to_pitch.system());
     }
 }
 pub struct PhysXDynamicForceCharacterControllerPlugin;
@@ -37,15 +37,15 @@ impl Plugin for PhysXDynamicForceCharacterControllerPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_system(create_mass.system())
             .add_system(constrain_rotation.system())
-            .add_system_to_stage(bevy::app::CoreStage::PreUpdate, body_to_velocity.system())
+            .add_system_to_stage(CoreStage::PreUpdate, body_to_velocity.system())
             // IMPORTANT: The impulse/force systems MUST run before the physics simulation step, so they
             // either need to be added to the end of PRE_UPDATE or the beginning of UPDATE
             .add_system_to_stage(
-                bevy::app::CoreStage::PreUpdate,
+                CoreStage::PreUpdate,
                 controller_to_physx_dynamic_force.system(),
             )
-            .add_system_to_stage(bevy::app::CoreStage::Update, controller_to_yaw.system())
-            .add_system_to_stage(bevy::app::CoreStage::Update, controller_to_pitch.system());
+            .add_system(controller_to_yaw.system())
+            .add_system(controller_to_pitch.system());
     }
 }
 

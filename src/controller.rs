@@ -6,13 +6,12 @@
 
 use crate::{
     events::{
-        ControllerEvents, ForceEvent, ImpulseEvent, LookDeltaEvent, LookEvent, PitchEvent,
-        TranslationEvent, YawEvent,
+        ForceEvent, ImpulseEvent, LookDeltaEvent, LookEvent, PitchEvent, TranslationEvent, YawEvent,
     },
     input_map::InputMap,
-    look::{forward_up, input_to_look, LookDirection, LookEntity, MouseMotionState, MouseSettings},
+    look::{forward_up, input_to_look, LookDirection, LookEntity, MouseSettings},
 };
-use bevy::{app::Events, prelude::*};
+use bevy::prelude::*;
 
 pub struct BodyTag;
 pub struct YawTag;
@@ -21,7 +20,9 @@ pub struct CameraTag;
 
 pub struct CharacterControllerPlugin;
 
-pub const PROCESS_INPUT_EVENTS: &str = "process_input_events";
+pub const INPUT_TO_EVENTS_SYSTEM: &str = "input_to_events";
+pub const INPUT_TO_LOOK_SYSTEM: &str = "input_to_look";
+pub const FORWARD_UP_SYSTEM: &str = "forward_up";
 
 impl Plugin for CharacterControllerPlugin {
     fn build(&self, app: &mut AppBuilder) {
@@ -32,17 +33,23 @@ impl Plugin for CharacterControllerPlugin {
             .add_event::<TranslationEvent>()
             .add_event::<ImpulseEvent>()
             .add_event::<ForceEvent>()
-            .init_resource::<ControllerEvents>()
-            .init_resource::<MouseMotionState>()
             .init_resource::<MouseSettings>()
-            .add_stage_after(
-                bevy::app::CoreStage::PreUpdate,
-                PROCESS_INPUT_EVENTS,
-                SystemStage::parallel(),
+            .add_system_to_stage(
+                CoreStage::PreUpdate,
+                input_to_events.system().label(INPUT_TO_EVENTS_SYSTEM),
             )
-            .add_system_to_stage(PROCESS_INPUT_EVENTS, input_to_events.system())
-            .add_system_to_stage(PROCESS_INPUT_EVENTS, input_to_look.system())
-            .add_system_to_stage(PROCESS_INPUT_EVENTS, forward_up.system());
+            .add_system_to_stage(
+                CoreStage::PreUpdate,
+                input_to_look.system().label(INPUT_TO_LOOK_SYSTEM),
+            )
+            .add_system_to_stage(
+                CoreStage::PreUpdate,
+                forward_up
+                    .system()
+                    .label(FORWARD_UP_SYSTEM)
+                    .after(INPUT_TO_EVENTS_SYSTEM)
+                    .after(INPUT_TO_LOOK_SYSTEM),
+            );
     }
 }
 
@@ -56,6 +63,7 @@ pub struct InputState {
     pub jump: bool,
 }
 
+#[derive(Debug)]
 pub struct CharacterController {
     pub input_map: InputMap,
     pub fly: bool,
@@ -86,6 +94,7 @@ impl Default for CharacterController {
     }
 }
 
+#[derive(Debug)]
 pub struct Mass {
     pub mass: f32,
 }
@@ -219,11 +228,10 @@ pub fn input_to_events(
 }
 
 pub fn controller_to_yaw(
-    mut reader: ResMut<ControllerEvents>,
-    yaws: Res<Events<YawEvent>>,
+    mut yaws: EventReader<YawEvent>,
     mut query: Query<&mut Transform, With<YawTag>>,
 ) {
-    if let Some(yaw) = reader.yaws.iter(&yaws).next() {
+    if let Some(yaw) = yaws.iter().next() {
         for mut transform in query.iter_mut() {
             transform.rotation = Quat::from_rotation_y(**yaw);
         }
@@ -231,11 +239,10 @@ pub fn controller_to_yaw(
 }
 
 pub fn controller_to_pitch(
-    mut reader: ResMut<ControllerEvents>,
-    pitches: Res<Events<PitchEvent>>,
+    mut pitches: EventReader<PitchEvent>,
     mut query: Query<&mut Transform, With<HeadTag>>,
 ) {
-    if let Some(pitch) = reader.pitches.iter(&pitches).next() {
+    if let Some(pitch) = pitches.iter().next() {
         for mut transform in query.iter_mut() {
             transform.rotation = Quat::from_rotation_ypr(0.0, **pitch, 0.0);
         }

@@ -1,5 +1,6 @@
 use bevy::input::keyboard::KeyCode;
 
+#[derive(Debug)]
 pub struct InputMap {
     pub key_forward: KeyCode,
     pub key_backward: KeyCode,

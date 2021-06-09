@@ -1,9 +1,9 @@
-use bevy::{app::Events, input::system::exit_on_esc_system, prelude::*};
+use bevy::{input::system::exit_on_esc_system, prelude::*};
 use bevy_prototype_character_controller::{
     controller::{
         BodyTag, CameraTag, CharacterController, CharacterControllerPlugin, HeadTag, Mass, YawTag,
     },
-    events::{ControllerEvents, TranslationEvent},
+    events::TranslationEvent,
     look::{LookDirection, LookEntity},
 };
 use rand::Rng;
@@ -35,7 +35,6 @@ pub fn build_app(app: &mut AppBuilder) {
         .insert_resource(Msaa { samples: 4 })
         .add_plugins(DefaultPlugins)
         .add_plugin(CharacterControllerPlugin)
-        .init_resource::<ControllerEvents>()
         .add_system(exit_on_esc_system.system())
         .add_startup_system(spawn_world.system())
         .add_startup_system(spawn_character.system());
@@ -161,15 +160,14 @@ pub fn spawn_character(
 }
 
 pub fn controller_to_kinematic(
-    translations: Res<Events<TranslationEvent>>,
-    mut reader: ResMut<ControllerEvents>,
+    mut translations: EventReader<TranslationEvent>,
     mut query: Query<
         (&mut Transform, &mut CharacterController),
         (With<BodyTag>, With<FakeKinematicRigidBody>),
     >,
 ) {
     for (mut transform, mut controller) in query.iter_mut() {
-        for translation in reader.translations.iter(&translations) {
+        for translation in translations.iter() {
             transform.translation += **translation;
         }
         // NOTE: This is just an example to stop falling past the initial body height

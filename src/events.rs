@@ -1,16 +1,5 @@
-use bevy::{app::ManualEventReader, prelude::*};
+use bevy::prelude::*;
 use std::ops::Deref;
-
-#[derive(Default)]
-pub struct ControllerEvents {
-    pub translations: ManualEventReader<TranslationEvent>,
-    pub impulses: ManualEventReader<ImpulseEvent>,
-    pub forces: ManualEventReader<ForceEvent>,
-    pub yaws: ManualEventReader<YawEvent>,
-    pub pitches: ManualEventReader<PitchEvent>,
-    pub looks: ManualEventReader<LookEvent>,
-    pub look_deltas: ManualEventReader<LookDeltaEvent>,
-}
 
 #[derive(Debug, Default)]
 pub struct LookDeltaEvent {

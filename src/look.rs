@@ -1,10 +1,6 @@
 // system that converts delta axis events into pitch and yaw
 use crate::events::{LookDeltaEvent, LookEvent, PitchEvent, YawEvent};
-use bevy::{
-    app::{Events, ManualEventReader},
-    input::mouse::MouseMotion,
-    prelude::*,
-};
+use bevy::{input::mouse::MouseMotion, prelude::*};
 
 #[derive(Clone, Copy)]
 pub struct LookDirection {
@@ -23,6 +19,7 @@ impl Default for LookDirection {
     }
 }
 
+#[derive(Debug)]
 pub struct LookEntity(pub Entity);
 
 pub fn forward_up(settings: Res<MouseSettings>, mut query: Query<&mut LookDirection>) {
@@ -52,24 +49,18 @@ impl Default for MouseSettings {
     }
 }
 
-#[derive(Default)]
-pub struct MouseMotionState {
-    event_reader: ManualEventReader<MouseMotion>,
-}
-
 const PITCH_BOUND: f32 = std::f32::consts::FRAC_PI_2 - 1E-3;
 
 pub fn input_to_look(
-    mouse_motion_events: Res<Events<MouseMotion>>,
+    mut mouse_motion_events: EventReader<MouseMotion>,
     mut settings: ResMut<MouseSettings>,
-    mut mouse_motion: ResMut<MouseMotionState>,
     mut pitch_events: EventWriter<PitchEvent>,
     mut yaw_events: EventWriter<YawEvent>,
     mut look_events: EventWriter<LookEvent>,
     mut look_delta_events: EventWriter<LookDeltaEvent>,
 ) {
     let mut delta = Vec2::ZERO;
-    for motion in mouse_motion.event_reader.iter(&mouse_motion_events) {
+    for motion in mouse_motion_events.iter() {
         // NOTE: -= to invert
         delta -= motion.delta;
     }
