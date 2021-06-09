@@ -5,8 +5,12 @@ use bevy_prototype_character_controller::{
     rapier::*,
 };
 use bevy_rapier3d::{
-    physics::{PhysicsInterpolationComponent, RapierConfiguration, RapierPhysicsPlugin},
-    rapier::{dynamics::RigidBodyBuilder, geometry::ColliderBuilder},
+    physics::TimestepMode,
+    prelude::{
+        ColliderBundle, ColliderMassProps, ColliderShape, NoUserData, RapierConfiguration,
+        RapierPhysicsPlugin, RigidBodyActivation, RigidBodyBundle, RigidBodyMassPropsFlags,
+        RigidBodyPosition, RigidBodyPositionSync, RigidBodyType,
+    },
 };
 use clap::{arg_enum, value_t};
 use rand::Rng;
@@ -44,9 +48,9 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_system(exit_on_esc_system.system())
         // Rapier
-        .add_plugin(RapierPhysicsPlugin)
+        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .insert_resource(RapierConfiguration {
-            time_dependent_number_of_timesteps: true,
+            timestep_mode: TimestepMode::InterpolatedTimestep,
             ..Default::default()
         });
 
@@ -96,10 +100,14 @@ pub fn spawn_world(
             )),
             ..Default::default()
         })
-        .insert_bundle((
-            RigidBodyBuilder::new_static(),
-            ColliderBuilder::cuboid(0.5 * box_xz, 0.5 * box_y, 0.5 * box_xz),
-        ));
+        .insert_bundle(RigidBodyBundle {
+            body_type: RigidBodyType::Static,
+            ..Default::default()
+        })
+        .insert_bundle(ColliderBundle {
+            shape: ColliderShape::cuboid(0.5 * box_xz, 0.5 * box_y, 0.5 * box_xz),
+            ..Default::default()
+        });
 
     // Cubes for some kind of reference in the scene to make it easy to see
     // what is happening
@@ -121,11 +129,23 @@ pub fn spawn_world(
                 )),
                 ..Default::default()
             })
-            .insert_bundle((
-                RigidBodyBuilder::new_dynamic().translation(x, 0.5 * (cube_scale - box_y), z),
-                ColliderBuilder::cuboid(0.5 * cube_scale, 0.5 * cube_scale, 0.5 * cube_scale),
-                PhysicsInterpolationComponent::new(translation, Quat::IDENTITY),
-            ));
+            .insert_bundle(RigidBodyBundle {
+                activation: RigidBodyActivation {
+                    sleeping: false,
+                    ..Default::default()
+                },
+                body_type: RigidBodyType::Dynamic,
+                position: RigidBodyPosition {
+                    position: (translation + Vec3::new(x, 0.5 * (cube_scale - box_y), z)).into(),
+                    ..Default::default()
+                },
+                ..Default::default()
+            })
+            .insert_bundle(ColliderBundle {
+                shape: ColliderShape::cuboid(0.5 * cube_scale, 0.5 * cube_scale, 0.5 * cube_scale),
+                ..Default::default()
+            })
+            .insert(RigidBodyPositionSync::Interpolated { prev_pos: None });
     }
 }
 
@@ -143,20 +163,31 @@ pub fn spawn_character(
             GlobalTransform::identity(),
             Transform::identity(),
             CharacterController::default(),
-            RigidBodyBuilder::new_dynamic()
-                .translation(0.0, 0.5 * (box_y + character_settings.scale.y), 0.0)
-                .lock_rotations(),
-            ColliderBuilder::capsule_y(
-                0.5 * character_settings.scale.y,
-                0.5 * character_settings.scale.x.max(character_settings.scale.z),
-            )
-            .density(200.0),
-            PhysicsInterpolationComponent::new(
-                0.5 * (box_y + character_settings.scale.y) * Vec3::Y,
-                Quat::IDENTITY,
-            ),
             BodyTag,
         ))
+        .insert_bundle(RigidBodyBundle {
+            activation: RigidBodyActivation {
+                sleeping: false,
+                ..Default::default()
+            },
+            body_type: RigidBodyType::Dynamic,
+            mass_properties: RigidBodyMassPropsFlags::ROTATION_LOCKED.into(),
+            position: RigidBodyPosition {
+                position: (0.5 * (box_y + character_settings.scale.y) * Vec3::Y).into(),
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .insert_bundle(ColliderBundle {
+            mass_properties: ColliderMassProps::Density(200.0),
+            shape: ColliderShape::capsule(
+                (-0.5 * character_settings.scale.y * Vec3::Y).into(),
+                (0.5 * character_settings.scale.y * Vec3::Y).into(),
+                0.5 * character_settings.scale.x.max(character_settings.scale.z),
+            ),
+            ..Default::default()
+        })
+        .insert(RigidBodyPositionSync::Interpolated { prev_pos: None })
         .id();
     let yaw = commands
         .spawn_bundle((GlobalTransform::identity(), Transform::identity(), YawTag))
