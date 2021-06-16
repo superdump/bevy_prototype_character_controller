@@ -25,7 +25,7 @@ pub const INPUT_TO_LOOK_SYSTEM: &str = "input_to_look";
 pub const FORWARD_UP_SYSTEM: &str = "forward_up";
 
 impl Plugin for CharacterControllerPlugin {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.add_event::<PitchEvent>()
             .add_event::<YawEvent>()
             .add_event::<LookEvent>()

@@ -12,7 +12,7 @@ pub const CREATE_MASS_FROM_RAPIER_SYSTEM: &str = "create_mass_from_rapier";
 pub const TOGGLE_FLY_MODE_SYSTEM: &str = "toggle_fly_mode";
 
 impl Plugin for RapierDynamicImpulseCharacterControllerPlugin {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.add_plugin(CharacterControllerPlugin)
             .add_system_to_stage(
                 CoreStage::PreUpdate,
@@ -50,7 +50,7 @@ impl Plugin for RapierDynamicImpulseCharacterControllerPlugin {
 pub struct RapierDynamicForceCharacterControllerPlugin;
 
 impl Plugin for RapierDynamicForceCharacterControllerPlugin {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.add_plugin(CharacterControllerPlugin)
             .add_system_to_stage(
                 CoreStage::PreUpdate,
