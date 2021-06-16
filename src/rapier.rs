@@ -16,23 +16,31 @@ impl Plugin for RapierDynamicImpulseCharacterControllerPlugin {
         app.add_plugin(CharacterControllerPlugin)
             .add_system_to_stage(
                 CoreStage::PreUpdate,
+                body_to_velocity
+                    .system()
+                    .label(BODY_TO_VELOCITY_SYSTEM)
+                    .before(INPUT_TO_EVENTS_SYSTEM),
+            )
+            .add_system_to_stage(
+                CoreStage::PreUpdate,
                 toggle_fly_mode
                     .system()
                     .label(TOGGLE_FLY_MODE_SYSTEM)
                     .after(INPUT_TO_EVENTS_SYSTEM),
             )
             // NOTE: This must come after the bevy_rapier3d finalize_collider_attach_to_bodies system
-            .add_system(
+            .add_system_to_stage(
+                CoreStage::PreUpdate,
                 create_mass_from_rapier
                     .system()
-                    .label(CREATE_MASS_FROM_RAPIER_SYSTEM),
+                    .label(CREATE_MASS_FROM_RAPIER_SYSTEM)
+                    .after(bevy_rapier3d::physics::PhysicsSystems::FinalizeColliderAttachToBodies),
             )
-            .add_system(body_to_velocity.system().label(BODY_TO_VELOCITY_SYSTEM))
             .add_system(
                 controller_to_rapier_dynamic_impulse
                     .system()
                     .label(CONTROLLER_TO_RAPIER_DYNAMIC_IMPULSE_SYSTEM)
-                    .after(BODY_TO_VELOCITY_SYSTEM),
+                    .before(bevy_rapier3d::physics::PhysicsSystems::StepWorld),
             )
             .add_system(controller_to_yaw.system())
             .add_system(controller_to_pitch.system());
@@ -46,23 +54,31 @@ impl Plugin for RapierDynamicForceCharacterControllerPlugin {
         app.add_plugin(CharacterControllerPlugin)
             .add_system_to_stage(
                 CoreStage::PreUpdate,
+                body_to_velocity
+                    .system()
+                    .label(BODY_TO_VELOCITY_SYSTEM)
+                    .before(INPUT_TO_EVENTS_SYSTEM),
+            )
+            .add_system_to_stage(
+                CoreStage::PreUpdate,
                 toggle_fly_mode
                     .system()
                     .label(TOGGLE_FLY_MODE_SYSTEM)
                     .after(INPUT_TO_EVENTS_SYSTEM),
             )
             // NOTE: This must come after the bevy_rapier3d finalize_collider_attach_to_bodies system
-            .add_system(
+            .add_system_to_stage(
+                CoreStage::PreUpdate,
                 create_mass_from_rapier
                     .system()
-                    .label(CREATE_MASS_FROM_RAPIER_SYSTEM),
+                    .label(CREATE_MASS_FROM_RAPIER_SYSTEM)
+                    .after(bevy_rapier3d::physics::PhysicsSystems::FinalizeColliderAttachToBodies),
             )
-            .add_system(body_to_velocity.system().label(BODY_TO_VELOCITY_SYSTEM))
             .add_system(
                 controller_to_rapier_dynamic_force
                     .system()
                     .label(CONTROLLER_TO_RAPIER_DYNAMIC_FORCE_SYSTEM)
-                    .after(BODY_TO_VELOCITY_SYSTEM),
+                    .before(bevy_rapier3d::physics::PhysicsSystems::StepWorld),
             )
             .add_system(controller_to_yaw.system())
             .add_system(controller_to_pitch.system());

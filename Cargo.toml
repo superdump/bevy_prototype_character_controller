@@ -13,7 +13,7 @@ use_rapier = [ "bevy_rapier3d" ]
 [dependencies]
 bevy = "0.5"
 bevy_prototype_physx = { git = "https://github.com/superdump/bevy_prototype_physx", optional = true }
-bevy_rapier3d = { version = "0.10", features = [ "parallel", "simd-stable" ], optional = true }
+bevy_rapier3d = { git = "https://github.com/dimforge/bevy_rapier", rev = "bb1abd2903080e9d88f6d6f0712ebfb14c2a93e9", features = [ "parallel", "simd-stable" ], optional = true }
 physx = { git = "https://github.com/superdump/physx-rs", branch = "send-sync-and-locks", optional = true }
 
 [dev-dependencies]
